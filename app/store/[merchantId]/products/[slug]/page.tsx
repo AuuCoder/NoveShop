@@ -46,9 +46,8 @@ export default async function MerchantStorefrontProductPage({
         announcement={announcement}
         error={search.error}
         backHref={buildPlatformStorefrontPath()}
-        backLabel="返回管理员店铺"
+        platformStore
         returnPath={buildPlatformProductPath(product.slug)}
-        storefrontName="管理员直营网"
       />
     );
   }
@@ -71,7 +70,7 @@ export default async function MerchantStorefrontProductPage({
       announcement={getMerchantStorefrontAnnouncement(merchant)}
       error={search.error}
       backHref={buildMerchantStorefrontPath(merchant.id)}
-      backLabel={`返回 ${merchant.name}`}
+      platformStore={false}
       returnPath={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
       storefrontName={merchant.name}
     />
