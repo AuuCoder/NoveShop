@@ -14,6 +14,7 @@ import {
   isNovaPaySuccessStatus,
   queryNovaPayOrder,
 } from "@/lib/novapay";
+import { normalizeChannelCode } from "@/lib/payment-channels";
 import { controlAuditLogSelect, type ControlAuditLogSnapshot } from "@/lib/control-audit";
 import {
   getPaymentProfileForOrderNo,
@@ -2762,7 +2763,9 @@ export async function createShopOrder(input: {
     }
 
     const paymentProfile = await requirePaymentProfileForProduct(sku.product.paymentProfileId);
-    const selectedChannelCode = input.channelCode?.trim() || paymentProfile.defaultChannelCode;
+    const selectedChannelCode = normalizeChannelCode(
+      input.channelCode?.trim() || paymentProfile.defaultChannelCode,
+    );
 
     if (!paymentProfile.enabledChannelCodes.includes(selectedChannelCode)) {
       throw new Error("所选支付方式当前不可用，请重新选择。");

@@ -4,6 +4,10 @@ export type PaymentChannelOption = {
   description: string;
 };
 
+const CHANNEL_CODE_ALIASES: Record<string, string> = {
+  "wechat.native": "wxpay.native",
+};
+
 const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
   "alipay.page": {
     label: "支付宝",
@@ -12,6 +16,10 @@ const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
   "wechat.h5": {
     label: "微信 H5",
     description: "适合手机浏览器内拉起微信支付。",
+  },
+  "wxpay.native": {
+    label: "微信扫码",
+    description: "适合 PC 或外部设备扫码支付。",
   },
   "wechat.native": {
     label: "微信扫码",
@@ -23,7 +31,12 @@ const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
   },
 };
 
-export const PAYMENT_CHANNEL_PRESET_CODES = Object.keys(CHANNEL_LABELS);
+export const PAYMENT_CHANNEL_PRESET_CODES = [
+  "alipay.page",
+  "wechat.h5",
+  "wxpay.native",
+  "wechat.jsapi",
+];
 
 function splitChannelCodeInput(value: string) {
   return value
@@ -33,7 +46,8 @@ function splitChannelCodeInput(value: string) {
 }
 
 export function normalizeChannelCode(value: string | null | undefined) {
-  return String(value ?? "").trim();
+  const normalized = String(value ?? "").trim();
+  return CHANNEL_CODE_ALIASES[normalized] ?? normalized;
 }
 
 export function normalizeEnabledChannelCodes(

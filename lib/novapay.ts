@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getEnv } from "@/lib/env";
+import { normalizeChannelCode } from "@/lib/payment-channels";
 
 export interface NovaPayMerchantConfig {
   merchantCode: string;
@@ -47,7 +48,7 @@ function requireNovaPayConfig(config?: Partial<NovaPayMerchantConfig>) {
     merchantCode: config?.merchantCode?.trim() || fallbackConfig.merchantCode,
     apiKey: config?.apiKey?.trim() || fallbackConfig.apiKey,
     apiSecret: config?.apiSecret?.trim() || fallbackConfig.apiSecret,
-    defaultChannelCode: config?.defaultChannelCode?.trim() || env.defaultChannelCode,
+    defaultChannelCode: normalizeChannelCode(config?.defaultChannelCode?.trim() || env.defaultChannelCode),
   };
   const missing = [
     ["NovaPay merchantCode", resolved.merchantCode],
@@ -128,7 +129,7 @@ export async function createNovaPayOrder(input: {
     "/api/payment-orders",
     {
       merchantCode: resolved.merchantCode,
-      channelCode: input.channelCode ?? resolved.defaultChannelCode,
+      channelCode: normalizeChannelCode(input.channelCode ?? resolved.defaultChannelCode),
       externalOrderId: input.externalOrderId,
       amount: input.amount,
       subject: input.subject,
