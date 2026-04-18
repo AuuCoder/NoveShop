@@ -1,15 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createShopOrderAction } from "@/app/actions";
 import { type SiteLanguage, useSitePreferences } from "@/app/ui-preferences";
-import { buildPaymentChannelOptions } from "@/lib/payment-channels";
+import { buildPaymentChannelOptions, isUsdtPaymentChannelCode } from "@/lib/payment-channels";
+import {
+  MAX_PUBLIC_ORDER_QUANTITY,
+  describeSkuPricingTier,
+  getSkuLowestUnitPriceCents,
+  getSkuUnitPriceCents,
+  parseStoredSkuPricingTiers,
+} from "@/lib/sku-pricing";
 
 type ProductDetailSkuSnapshot = {
   id: string;
   name: string;
   priceCents: number;
+  pricingTiers: string | null;
   stock: {
     available: number;
   };
@@ -36,6 +44,19 @@ type StorefrontAnnouncementSnapshot = {
   updatedAt: Date | string | null;
 };
 
+type StorefrontPaymentChannelOption = {
+  code: string;
+  description: string;
+  label: string;
+};
+
+type StorefrontPaymentChannelGroup = {
+  code: string;
+  description: string;
+  label: string;
+  channels: StorefrontPaymentChannelOption[];
+};
+
 function hasStorefrontAnnouncement(announcement: StorefrontAnnouncementSnapshot | null | undefined) {
   return Boolean(announcement?.enabled && (announcement.title || announcement.body));
 }
@@ -48,12 +69,28 @@ function formatCurrency(cents: number, language: SiteLanguage) {
   }).format(cents / 100);
 }
 
+function clampQuantity(value: number, maxQuantity: number) {
+  return Math.min(Math.max(1, Math.floor(value || 1)), Math.max(1, maxQuantity));
+}
+
 function getPaymentChannelDictionary(language: SiteLanguage) {
   if (language === "en") {
     return {
       "alipay.page": {
         description: "Best for launching the Alipay hosted checkout page from the web.",
         label: "Alipay Page",
+      },
+      "usdt.base": {
+        description: "Pay with USDT on the Base network.",
+        label: "USDT · Base",
+      },
+      "usdt.bsc": {
+        description: "Pay with USDT on the BSC network.",
+        label: "USDT · BSC",
+      },
+      "usdt.sol": {
+        description: "Pay with USDT on the Solana network.",
+        label: "USDT · Solana",
       },
       "wechat.h5": {
         description: "Best for mobile browser flows that continue into WeChat Pay.",
@@ -74,6 +111,18 @@ function getPaymentChannelDictionary(language: SiteLanguage) {
     "alipay.page": {
       description: "适合网页内直接拉起支付宝收银台。",
       label: "支付宝",
+    },
+    "usdt.base": {
+      description: "通过 Base 链完成 USDT 转账支付。",
+      label: "USDT · Base",
+    },
+    "usdt.bsc": {
+      description: "通过 BSC 链完成 USDT 转账支付。",
+      label: "USDT · BSC",
+    },
+    "usdt.sol": {
+      description: "通过 Solana 链完成 USDT 转账支付。",
+      label: "USDT · Solana",
     },
     "wechat.h5": {
       description: "适合手机浏览器内拉起微信支付。",
@@ -105,6 +154,7 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
       backLabel: `Back to ${localizedStorefrontName}`,
       buyNow: "Buy now",
       choosePaymentMethod: "Payment method",
+      chooseUsdtNetwork: "USDT network",
       chooseSku: "Choose SKU",
       createOrder: "Create order and continue to payment",
       defaultBadge: "Default",
@@ -121,7 +171,12 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
       paymentMethodUnavailable: "Payment methods unavailable",
       productInfo: "Product info",
       productMode: "Product mode",
+      pricingRules: "Volume pricing",
+      currentUnitPrice: "Unit price",
+      estimatedTotal: "Estimated total",
       quantity: "Quantity",
+      quantityHint: (maxQuantity: number) => `Up to ${maxQuantity} items per order for this SKU.`,
+      selectedPaymentDetail: "Selected route",
       skuCount: "SKU count",
       skuList: "SKU list",
       skuModeDescription: "Each SKU has its own price and inventory.",
@@ -132,6 +187,7 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
       storefrontLabel: "Storefront",
       stockLabel: "Stock",
       unavailableStock: "Out of stock",
+      usdtGroupDescription: "Choose USDT first, then pick the chain you want to pay on.",
       announcementHeading: "Store announcement",
       channelCount: (count: number) =>
         count > 0
@@ -146,6 +202,7 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
     backLabel: `返回 ${localizedStorefrontName}`,
     buyNow: "立即购买",
     choosePaymentMethod: "支付方式",
+    chooseUsdtNetwork: "USDT 链路",
     chooseSku: "选择 SKU",
     createOrder: "创建订单并去支付",
     defaultBadge: "默认",
@@ -162,7 +219,12 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
     paymentMethodUnavailable: "支付方式未配置",
     productInfo: "商品信息",
     productMode: "商品模式",
+    pricingRules: "阶梯价格",
+    currentUnitPrice: "当前单价",
+    estimatedTotal: "预估合计",
     quantity: "数量",
+    quantityHint: (maxQuantity: number) => `当前规格单笔最多可购买 ${maxQuantity} 件。`,
+    selectedPaymentDetail: "当前选择",
     skuCount: "SKU 数量",
     skuList: "规格列表",
     skuModeDescription: "每个 SKU 独立定价、独立库存。",
@@ -173,9 +235,47 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
     storefrontLabel: "所属店铺",
     stockLabel: "库存",
     unavailableStock: "库存不足",
+    usdtGroupDescription: "先选择 USDT，再挑选具体链路完成支付。",
     announcementHeading: "店铺公告",
     channelCount: (count: number) => (count > 0 ? ` 当前支持 ${count} 种支付方式。` : " 当前暂未配置可用支付方式。"),
   };
+}
+
+function buildPaymentChannelGroups(
+  channels: StorefrontPaymentChannelOption[],
+  language: SiteLanguage,
+): StorefrontPaymentChannelGroup[] {
+  const groups: StorefrontPaymentChannelGroup[] = [];
+  let usdtGroup: StorefrontPaymentChannelGroup | null = null;
+
+  for (const channel of channels) {
+    if (isUsdtPaymentChannelCode(channel.code)) {
+      if (!usdtGroup) {
+        usdtGroup = {
+          code: "usdt",
+          description:
+            language === "en"
+              ? "Pay with USDT and choose your preferred network in the next step."
+              : "使用 USDT 支付，并在下一步选择具体链路。",
+          label: "USDT",
+          channels: [],
+        };
+        groups.push(usdtGroup);
+      }
+
+      usdtGroup.channels.push(channel);
+      continue;
+    }
+
+    groups.push({
+      code: channel.code,
+      description: channel.description,
+      label: channel.label,
+      channels: [channel],
+    });
+  }
+
+  return groups;
 }
 
 export function ProductDetailView({
@@ -206,6 +306,7 @@ export function ProductDetailView({
   const primarySku = product.skus[0] ?? null;
   const availableSkus = product.skus.filter((sku) => sku.stock.available > 0);
   const defaultSkuId = availableSkus[0]?.id ?? primarySku?.id ?? "";
+  const [selectedSkuIdState, setSelectedSkuId] = useState(defaultSkuId);
   const paymentChannels = useMemo(() => {
     const dictionary = getPaymentChannelDictionary(language);
 
@@ -215,15 +316,55 @@ export function ProductDetailView({
       label: dictionary[channel.code as keyof typeof dictionary]?.label ?? channel.label,
     }));
   }, [checkoutChannelConfig?.enabledChannelCodes, language]);
+  const paymentGroups = useMemo(
+    () => buildPaymentChannelGroups(paymentChannels, language),
+    [language, paymentChannels],
+  );
   const defaultChannelCode =
     paymentChannels.find((channel) => channel.code === checkoutChannelConfig?.defaultChannelCode)?.code ??
     paymentChannels[0]?.code ??
     "";
-  const maxQuantity = Math.min(
-    Math.max(...product.skus.map((sku) => sku.stock.available), 1),
-    10,
+  const defaultGroupCode =
+    paymentGroups.find((group) => group.channels.some((channel) => channel.code === defaultChannelCode))?.code ??
+    paymentGroups[0]?.code ??
+    "";
+  const [selectedGroupCodeState, setSelectedGroupCode] = useState(defaultGroupCode);
+  const [selectedChannelCodeState, setSelectedChannelCode] = useState(defaultChannelCode);
+  const selectedGroupCode = paymentGroups.some((group) => group.code === selectedGroupCodeState)
+    ? selectedGroupCodeState
+    : defaultGroupCode;
+  const selectedGroup =
+    paymentGroups.find((group) => group.code === selectedGroupCode) ??
+    paymentGroups.find((group) => group.channels.some((channel) => channel.code === selectedChannelCodeState)) ??
+    paymentGroups[0] ??
+    null;
+  const selectedChannelCode = selectedGroup?.channels.some((channel) => channel.code === selectedChannelCodeState)
+    ? selectedChannelCodeState
+    : selectedGroup?.channels.find((channel) => channel.code === defaultChannelCode)?.code ??
+      selectedGroup?.channels[0]?.code ??
+      "";
+  const selectedSkuId =
+    isMultiSku && product.skus.some((sku) => sku.id === selectedSkuIdState && sku.stock.available > 0)
+      ? selectedSkuIdState
+      : defaultSkuId;
+  const selectedSku =
+    product.skus.find((sku) => sku.id === (isMultiSku ? selectedSkuId : defaultSkuId)) ?? primarySku;
+  const maxQuantity = Math.max(
+    1,
+    Math.min(selectedSku?.stock.available ?? 1, MAX_PUBLIC_ORDER_QUANTITY),
   );
-  const canPurchase = availableSkus.length > 0 && Boolean(defaultSkuId) && paymentChannels.length > 0;
+  const [quantityState, setQuantity] = useState(1);
+  const quantity = clampQuantity(quantityState, maxQuantity);
+  const selectedSkuPricingTiers = selectedSku ? parseStoredSkuPricingTiers(selectedSku.pricingTiers) : [];
+  const selectedUnitPriceCents = selectedSku
+    ? getSkuUnitPriceCents(selectedSku.priceCents, selectedSku.pricingTiers, quantity)
+    : null;
+  const selectedTotalPriceCents = selectedUnitPriceCents === null ? null : selectedUnitPriceCents * quantity;
+  const canPurchase =
+    availableSkus.length > 0 &&
+    Boolean(defaultSkuId) &&
+    Boolean(selectedChannelCode) &&
+    Boolean(selectedSku && selectedSku.stock.available > 0);
 
   return (
     <div className="storefront-shell">
@@ -320,8 +461,17 @@ export function ProductDetailView({
                             {sku.summary || (language === "zh" ? "该规格未补充额外说明。" : "No extra note for this SKU yet.")}
                           </p>
                         </div>
-                        <span className="price-chip">{formatCurrency(sku.priceCents, language)}</span>
+                        <span className="price-chip">
+                          {formatCurrency(getSkuLowestUnitPriceCents(sku.priceCents, sku.pricingTiers), language)}
+                          {parseStoredSkuPricingTiers(sku.pricingTiers).length > 0 ? copy.fromSuffix : ""}
+                        </span>
                       </div>
+
+                      {parseStoredSkuPricingTiers(sku.pricingTiers).length > 0 ? (
+                        <p className="small-copy">
+                          {parseStoredSkuPricingTiers(sku.pricingTiers).map(describeSkuPricingTier).join(" / ")}
+                        </p>
+                      ) : null}
 
                       <div className="data-row">
                         <span className="data-key">{copy.stockLabel}</span>
@@ -350,12 +500,13 @@ export function ProductDetailView({
           <div className="panel-body">
             <p className="helper-text">
               {copy.helperText}
-              {copy.channelCount(paymentChannels.length)}
+              {copy.channelCount(paymentGroups.length)}
             </p>
 
             <form action={createShopOrderAction} className="inline-form">
               <input type="hidden" name="slug" value={product.slug} />
               <input type="hidden" name="returnPath" value={returnPath} />
+              <input type="hidden" name="channelCode" value={selectedChannelCode} />
               {isMultiSku ? (
                 <div className="field">
                   <label>{copy.chooseSku}</label>
@@ -369,16 +520,28 @@ export function ProductDetailView({
                           type="radio"
                           name="skuId"
                           value={sku.id}
-                          defaultChecked={sku.id === defaultSkuId}
+                          checked={sku.id === selectedSkuId}
+                          onChange={() => {
+                            setSelectedSkuId(sku.id);
+                            setQuantity((currentQuantity) =>
+                              clampQuantity(currentQuantity, Math.min(sku.stock.available, MAX_PUBLIC_ORDER_QUANTITY)),
+                            );
+                          }}
                           disabled={sku.stock.available === 0}
                           required
                         />
                         <div className="sku-option-body">
                           <div className="sku-option-head">
                             <strong>{sku.name}</strong>
-                            <span>{formatCurrency(sku.priceCents, language)}</span>
+                            <span>
+                              {formatCurrency(getSkuLowestUnitPriceCents(sku.priceCents, sku.pricingTiers), language)}
+                              {parseStoredSkuPricingTiers(sku.pricingTiers).length > 0 ? copy.fromSuffix : ""}
+                            </span>
                           </div>
                           <p>{sku.summary || copy.singleSkuNote}</p>
+                          {parseStoredSkuPricingTiers(sku.pricingTiers).length > 0 ? (
+                            <small>{parseStoredSkuPricingTiers(sku.pricingTiers).map(describeSkuPricingTier).join(" / ")}</small>
+                          ) : null}
                           <small>
                             {copy.stockLabel} {sku.stock.available}
                           </small>
@@ -397,7 +560,14 @@ export function ProductDetailView({
                     </div>
                     <div className="data-row">
                       <span className="data-key">{language === "zh" ? "售价" : "Price"}</span>
-                      <strong>{primarySku ? formatCurrency(primarySku.priceCents, language) : "--"}</strong>
+                      <strong>
+                        {primarySku
+                          ? `${formatCurrency(
+                              getSkuLowestUnitPriceCents(primarySku.priceCents, primarySku.pricingTiers),
+                              language,
+                            )}${parseStoredSkuPricingTiers(primarySku.pricingTiers).length > 0 ? copy.fromSuffix : ""}`
+                          : "--"}
+                      </strong>
                     </div>
                     <div className="data-row">
                       <span className="data-key">{copy.stockLabel}</span>
@@ -407,17 +577,67 @@ export function ProductDetailView({
                 </>
               )}
 
-              {paymentChannels.length > 0 ? (
+              {paymentGroups.length > 0 ? (
                 <div className="field">
                   <label>{copy.choosePaymentMethod}</label>
                   <div className="sku-selector">
-                    {paymentChannels.map((channel) => (
+                    {paymentGroups.map((group) => {
+                      const groupSelected = group.code === (selectedGroup?.code ?? "");
+                      const isDefaultGroup = group.channels.some((channel) => channel.code === defaultChannelCode);
+
+                      return (
+                        <label key={group.code} className="sku-option">
+                          <input
+                            type="radio"
+                            name="paymentGroupSelection"
+                            value={group.code}
+                            checked={groupSelected}
+                            onChange={() => {
+                              setSelectedGroupCode(group.code);
+                              setSelectedChannelCode(
+                                group.channels.find((channel) => channel.code === defaultChannelCode)?.code ??
+                                  group.channels[0]?.code ??
+                                  "",
+                              );
+                            }}
+                            required
+                          />
+                          <div className="sku-option-body">
+                            <div className="sku-option-head">
+                              <strong>{group.label}</strong>
+                              <span>
+                                {isDefaultGroup
+                                  ? copy.defaultBadge
+                                  : group.channels.length > 1
+                                    ? language === "en"
+                                      ? `${group.channels.length} networks`
+                                      : `${group.channels.length} 条链`
+                                    : group.channels[0]?.code}
+                              </span>
+                            </div>
+                            <p>{group.code === "usdt" ? copy.usdtGroupDescription : group.description}</p>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="notice-card error">{copy.noPaymentChannel}</div>
+              )}
+
+              {selectedGroup && selectedGroup.channels.length > 1 ? (
+                <div className="field">
+                  <label>{copy.chooseUsdtNetwork}</label>
+                  <div className="sku-selector">
+                    {selectedGroup.channels.map((channel) => (
                       <label key={channel.code} className="sku-option">
                         <input
                           type="radio"
-                          name="channelCode"
+                          name="channelVariantSelection"
                           value={channel.code}
-                          defaultChecked={channel.code === defaultChannelCode}
+                          checked={channel.code === selectedChannelCode}
+                          onChange={() => setSelectedChannelCode(channel.code)}
                           required
                         />
                         <div className="sku-option-body">
@@ -431,9 +651,37 @@ export function ProductDetailView({
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div className="notice-card error">{copy.noPaymentChannel}</div>
-              )}
+              ) : null}
+
+              {selectedGroup && selectedChannelCode ? (
+                <div className="sub-panel">
+                  <div className="data-row">
+                    <span className="data-key">{copy.selectedPaymentDetail}</span>
+                    <strong>
+                      {selectedGroup.channels.find((channel) => channel.code === selectedChannelCode)?.label ?? selectedChannelCode}
+                    </strong>
+                  </div>
+                </div>
+              ) : null}
+
+              {selectedSku && selectedUnitPriceCents !== null && selectedTotalPriceCents !== null ? (
+                <div className="sub-panel">
+                  <div className="data-row">
+                    <span className="data-key">{copy.currentUnitPrice}</span>
+                    <strong>{formatCurrency(selectedUnitPriceCents, language)}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span className="data-key">{copy.estimatedTotal}</span>
+                    <strong>{formatCurrency(selectedTotalPriceCents, language)}</strong>
+                  </div>
+                  {selectedSkuPricingTiers.length > 0 ? (
+                    <div className="data-row">
+                      <span className="data-key">{copy.pricingRules}</span>
+                      <strong>{selectedSkuPricingTiers.map(describeSkuPricingTier).join(" / ")}</strong>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="field">
                 <label htmlFor="customerEmail">{copy.email}</label>
@@ -448,13 +696,17 @@ export function ProductDetailView({
 
               <div className="field">
                 <label htmlFor="quantity">{copy.quantity}</label>
-                <select id="quantity" name="quantity" defaultValue="1">
-                  {Array.from({ length: maxQuantity || 1 }, (_, index) => (
-                    <option key={index + 1} value={index + 1}>
-                      {index + 1}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  min={1}
+                  max={maxQuantity}
+                  step={1}
+                  value={quantity}
+                  onChange={(event) => setQuantity(clampQuantity(Number(event.target.value), maxQuantity))}
+                />
+                <p className="small-copy">{copy.quantityHint(maxQuantity)}</p>
               </div>
 
               <button type="submit" className="button" disabled={!canPurchase}>

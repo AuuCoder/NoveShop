@@ -246,6 +246,7 @@ export async function createProductAction(formData: FormData) {
       initialSkuName: String(formData.get("initialSkuName") ?? ""),
       initialSkuSummary: String(formData.get("initialSkuSummary") ?? ""),
       initialSkuPrice: String(formData.get("initialSkuPrice") ?? ""),
+      initialSkuPricingTiers: String(formData.get("initialSkuPricingTiers") ?? ""),
     });
 
     revalidateAdminSurface();
@@ -294,6 +295,7 @@ export async function createSkuAction(formData: FormData) {
       name: String(formData.get("name") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       price: String(formData.get("price") ?? ""),
+      pricingTiers: String(formData.get("pricingTiers") ?? ""),
       enabled: parseCheckbox(formData.get("enabled")),
     });
 
@@ -317,6 +319,7 @@ export async function updateSkuAction(formData: FormData) {
       name: String(formData.get("name") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       price: String(formData.get("price") ?? ""),
+      pricingTiers: String(formData.get("pricingTiers") ?? ""),
       enabled: parseCheckbox(formData.get("enabled")),
     });
 

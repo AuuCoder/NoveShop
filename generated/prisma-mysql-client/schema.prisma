@@ -95,18 +95,19 @@ model Product {
 }
 
 model ProductSku {
-  id         String      @id @default(cuid())
-  productId  String
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name       String
-  summary    String?
-  priceCents Int
-  enabled    Boolean     @default(true)
-  sortOrder  Int         @default(0)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  cards      CardItem[]
-  orders     ShopOrder[]
+  id           String      @id @default(cuid())
+  productId    String
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name         String
+  summary      String?
+  priceCents   Int
+  pricingTiers String?
+  enabled      Boolean     @default(true)
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  cards        CardItem[]
+  orders       ShopOrder[]
 
   @@index([productId, enabled, sortOrder, createdAt])
   @@index([productId, sortOrder, createdAt])

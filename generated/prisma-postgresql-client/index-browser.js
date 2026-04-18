@@ -162,6 +162,7 @@ exports.Prisma.ProductSkuScalarFieldEnum = {
   name: 'name',
   summary: 'summary',
   priceCents: 'priceCents',
+  pricingTiers: 'pricingTiers',
   enabled: 'enabled',
   sortOrder: 'sortOrder',
   createdAt: 'createdAt',

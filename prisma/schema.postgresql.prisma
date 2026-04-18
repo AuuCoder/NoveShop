@@ -101,6 +101,7 @@ model ProductSku {
   name       String
   summary    String?
   priceCents Int
+  pricingTiers String?
   enabled    Boolean   @default(true)
   sortOrder  Int       @default(0)
   createdAt  DateTime  @default(now())

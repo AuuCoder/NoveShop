@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CardItemStatus, ProductSaleMode, ProductStatus, ShopOrderStatus } from "@prisma/client";
 import { PaymentChannelConfigFields } from "@/app/payment-channel-config-fields";
 import { PaymentOperationsView } from "@/app/payment-operations-view";
+import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
 import {
   changeMerchantPasswordAction,
   clearMerchantSkuInventoryAction,
@@ -1010,6 +1011,11 @@ function ProductsSection({
                     <label htmlFor="initialSkuSummary">SKU 说明</label>
                     <input id="initialSkuSummary" name="initialSkuSummary" placeholder="例如 官方直充 / 自动秒发" />
                   </div>
+
+                  <div className="field">
+                    <label>阶梯价规则</label>
+                    <SkuPricingTierEditor name="initialSkuPricingTiers" />
+                  </div>
                 </div>
 
                 <button type="submit" className="button">
@@ -1229,6 +1235,11 @@ function ProductsSection({
                                     <input name="summary" defaultValue={sku.summary ?? ""} />
                                   </div>
 
+                                  <div className="field">
+                                    <label>阶梯价规则</label>
+                                    <SkuPricingTierEditor name="pricingTiers" initialValue={sku.pricingTiers} />
+                                  </div>
+
                                   <label className="admin-check-row">
                                     <input type="checkbox" name="enabled" defaultChecked={sku.enabled} />
                                     <span>启用该 SKU</span>
@@ -1278,6 +1289,11 @@ function ProductsSection({
                                 <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
                               </div>
 
+                              <div className="field">
+                                <label>阶梯价规则</label>
+                                <SkuPricingTierEditor name="pricingTiers" />
+                              </div>
+
                               <label className="admin-check-row">
                                 <input type="checkbox" name="enabled" defaultChecked />
                                 <span>创建后立即启用</span>
@@ -1325,6 +1341,11 @@ function ProductsSection({
                               <div className="field">
                                 <label>商品说明</label>
                                 <input name="summary" defaultValue={singleModeSku.summary ?? ""} />
+                              </div>
+
+                              <div className="field">
+                                <label>阶梯价规则</label>
+                                <SkuPricingTierEditor name="pricingTiers" initialValue={singleModeSku.pricingTiers} />
                               </div>
 
                               <label className="admin-check-row">

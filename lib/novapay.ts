@@ -123,6 +123,7 @@ export async function createNovaPayOrder(input: {
   returnUrl: string;
   callbackUrl: string;
   channelCode?: string;
+  metadata?: Record<string, unknown>;
 }, config?: Partial<NovaPayMerchantConfig>) {
   const resolved = requireNovaPayConfig(config);
   return requestNovaPay<NovaPayResponse>(
@@ -136,6 +137,7 @@ export async function createNovaPayOrder(input: {
       description: input.description ?? undefined,
       returnUrl: input.returnUrl,
       callbackUrl: input.callbackUrl,
+      metadata: input.metadata,
     },
     `create_${input.externalOrderId}`,
     config,

@@ -508,6 +508,7 @@ export async function createMerchantProductAction(formData: FormData) {
       initialSkuName: String(formData.get("initialSkuName") ?? ""),
       initialSkuSummary: String(formData.get("initialSkuSummary") ?? ""),
       initialSkuPrice: String(formData.get("initialSkuPrice") ?? ""),
+      initialSkuPricingTiers: String(formData.get("initialSkuPricingTiers") ?? ""),
     });
 
     revalidateMerchantSurface(merchant.id);
@@ -555,6 +556,7 @@ export async function createMerchantSkuAction(formData: FormData) {
       name: String(formData.get("name") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       price: String(formData.get("price") ?? ""),
+      pricingTiers: String(formData.get("pricingTiers") ?? ""),
       enabled: parseCheckbox(formData.get("enabled")),
     });
 
@@ -578,6 +580,7 @@ export async function updateMerchantSkuAction(formData: FormData) {
       name: String(formData.get("name") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       price: String(formData.get("price") ?? ""),
+      pricingTiers: String(formData.get("pricingTiers") ?? ""),
       enabled: parseCheckbox(formData.get("enabled")),
     });
 

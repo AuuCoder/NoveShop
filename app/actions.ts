@@ -81,7 +81,10 @@ export async function createShopOrderAction(formData: FormData) {
       revalidatePath(storefrontIndexPath);
     }
 
-    destination = `/orders/${order.publicToken}`;
+    destination =
+      order.hostedCheckoutUrl?.trim() ||
+      order.checkoutUrl?.trim() ||
+      `/orders/${order.publicToken}`;
   } catch (error) {
     destination = appendErrorToPath(returnPath, getMessage(error));
   }

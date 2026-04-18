@@ -162,6 +162,7 @@ exports.Prisma.ProductSkuScalarFieldEnum = {
   name: 'name',
   summary: 'summary',
   priceCents: 'priceCents',
+  pricingTiers: 'pricingTiers',
   enabled: 'enabled',
   sortOrder: 'sortOrder',
   createdAt: 'createdAt',
@@ -356,7 +357,8 @@ exports.Prisma.ProductSkuOrderByRelevanceFieldEnum = {
   id: 'id',
   productId: 'productId',
   name: 'name',
-  summary: 'summary'
+  summary: 'summary',
+  pricingTiers: 'pricingTiers'
 };
 
 exports.Prisma.PaymentProfileOrderByRelevanceFieldEnum = {

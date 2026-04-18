@@ -14,7 +14,7 @@ import {
   isNovaPaySuccessStatus,
   queryNovaPayOrder,
 } from "@/lib/novapay";
-import { normalizeChannelCode } from "@/lib/payment-channels";
+import { isUsdtPaymentChannelCode, normalizeChannelCode } from "@/lib/payment-channels";
 import { controlAuditLogSelect, type ControlAuditLogSnapshot } from "@/lib/control-audit";
 import {
   getPaymentProfileForOrderNo,
@@ -34,8 +34,16 @@ import {
   slugify,
 } from "@/lib/utils";
 import { getEnv } from "@/lib/env";
+import { buildStorefrontPath, buildStorefrontProductPath } from "@/lib/storefront";
+import {
+  MAX_PUBLIC_ORDER_QUANTITY,
+  getSkuLowestUnitPriceCents,
+  getSkuUnitPriceCents,
+  serializeSkuPricingTiers,
+} from "@/lib/sku-pricing";
 
 const ORDER_RESERVE_MINUTES = 30;
+const USDT_ORDER_RESERVE_MINUTES = 15;
 const DEFAULT_SKU_NAME = "默认规格";
 
 type StockSummary = {
@@ -55,6 +63,7 @@ type ProductWithSkuShape = {
   skus: Array<{
     id: string;
     priceCents: number;
+    pricingTiers: string | null;
     enabled: boolean;
   }>;
 };
@@ -1510,7 +1519,7 @@ async function compactProductSkuSortOrders(
 
 function getStartingPriceCents(
   fallbackPriceCents: number,
-  skus: Array<{ priceCents: number; enabled: boolean }>,
+  skus: Array<{ priceCents: number; pricingTiers: string | null; enabled: boolean }>,
 ) {
   const candidates = skus.filter((sku) => sku.enabled);
   const source = candidates.length > 0 ? candidates : skus;
@@ -1519,7 +1528,7 @@ function getStartingPriceCents(
     return fallbackPriceCents;
   }
 
-  return Math.min(...source.map((sku) => sku.priceCents));
+  return Math.min(...source.map((sku) => getSkuLowestUnitPriceCents(sku.priceCents, sku.pricingTiers)));
 }
 
 async function hydrateProductsWithSkuStock<TProduct extends ProductWithSkuShape>(
@@ -1549,12 +1558,30 @@ function centsToAmount(cents: number) {
   return (cents / 100).toFixed(2);
 }
 
-function getOrderUrls(publicToken: string) {
-  const baseUrl = getEnv().shopPublicBaseUrl;
+function buildShopPublicUrl(path: string) {
+  return new URL(path, getEnv().shopPublicBaseUrl).toString();
+}
+
+function getOrderUrls(
+  publicToken: string,
+  options?: {
+    merchantAccountId?: string | null;
+    productSlug?: string | null;
+  },
+) {
+  const storefrontPath = buildStorefrontPath(options?.merchantAccountId);
+  const productPath =
+    options?.productSlug?.trim()
+      ? buildStorefrontProductPath(options.productSlug, options?.merchantAccountId)
+      : storefrontPath;
 
   return {
-    returnUrl: `${baseUrl}/orders/${publicToken}?sync=1`,
-    callbackUrl: `${baseUrl}/api/novapay/callback`,
+    returnUrl: buildShopPublicUrl(`/orders/${publicToken}?sync=1`),
+    callbackUrl: buildShopPublicUrl("/api/novapay/callback"),
+    metadata: {
+      storefrontUrl: buildShopPublicUrl(storefrontPath),
+      productUrl: buildShopPublicUrl(productPath),
+    },
   };
 }
 
@@ -2158,7 +2185,12 @@ async function syncProductPriceCache(tx: Prisma.TransactionClient, productId: st
       id: productId,
     },
     data: {
-      priceCents: activeSku?.priceCents ?? fallbackSku?.priceCents ?? 0,
+      priceCents:
+        activeSku
+          ? getSkuLowestUnitPriceCents(activeSku.priceCents, activeSku.pricingTiers)
+          : fallbackSku
+            ? getSkuLowestUnitPriceCents(fallbackSku.priceCents, fallbackSku.pricingTiers)
+            : 0,
     },
   });
 }
@@ -2316,6 +2348,7 @@ function applyPublicSaleMode<
     skus: Array<{
       id: string;
       priceCents: number;
+      pricingTiers: string | null;
       stock: StockSummary;
     }>;
     stock: StockSummary;
@@ -2336,7 +2369,7 @@ function applyPublicSaleMode<
     ...product,
     skus: [primarySku],
     stock: primarySku.stock,
-    startingPriceCents: primarySku.priceCents,
+    startingPriceCents: getSkuLowestUnitPriceCents(primarySku.priceCents, primarySku.pricingTiers),
   };
 }
 
@@ -2746,7 +2779,11 @@ export async function createShopOrder(input: {
 }) {
   await cleanupExpiredOrders();
   const email = normalizeEmail(input.customerEmail);
-  const quantity = Math.max(1, Math.min(10, Math.floor(input.quantity)));
+  const quantity = Math.max(1, Math.floor(input.quantity));
+
+  if (quantity > MAX_PUBLIC_ORDER_QUANTITY) {
+    throw new Error(`单笔最多购买 ${MAX_PUBLIC_ORDER_QUANTITY} 件。`);
+  }
 
   const reserved = await prisma.$transaction(async (tx) => {
     const sku = await tx.productSku.findUnique({
@@ -2784,16 +2821,25 @@ export async function createShopOrder(input: {
       throw new Error("该规格库存不足，暂时无法完成下单。");
     }
 
+    const unitPriceCents = getSkuUnitPriceCents(sku.priceCents, sku.pricingTiers, quantity);
+    const orderAmountCents = unitPriceCents * quantity;
+
     const orderNo = generateOrderNo();
     const publicToken = generateToken();
     const traceId = generateToken();
-    const expiresAt = new Date(Date.now() + ORDER_RESERVE_MINUTES * 60_000);
+    const reserveMinutes = isUsdtPaymentChannelCode(selectedChannelCode)
+      ? USDT_ORDER_RESERVE_MINUTES
+      : ORDER_RESERVE_MINUTES;
+    const expiresAt = new Date(Date.now() + reserveMinutes * 60_000);
     const createPayload = {
       externalOrderId: orderNo,
-      amount: centsToAmount(sku.priceCents * quantity),
+      amount: centsToAmount(orderAmountCents),
       subject: `${sku.product.name} - ${sku.name}`,
       description: `${sku.product.name} / ${sku.name} x${quantity}`,
-      ...getOrderUrls(publicToken),
+      ...getOrderUrls(publicToken, {
+        merchantAccountId: paymentProfile.ownerId,
+        productSlug: sku.product.slug,
+      }),
       channelCode: selectedChannelCode,
     };
     const order = await tx.shopOrder.create({
@@ -2805,7 +2851,7 @@ export async function createShopOrder(input: {
         skuId: sku.id,
         quantity,
         customerEmail: email,
-        amountCents: sku.priceCents * quantity,
+        amountCents: orderAmountCents,
         channelCode: selectedChannelCode,
         expiresAt,
       },
@@ -3554,6 +3600,7 @@ export async function createMerchantProduct(input: {
   initialSkuName?: string;
   initialSkuSummary?: string;
   initialSkuPrice: string;
+  initialSkuPricingTiers?: string;
 }) {
   const name = input.name.trim();
 
@@ -3564,6 +3611,7 @@ export async function createMerchantProduct(input: {
   const slug = slugify(input.slugValue?.trim() || name);
   const skuName = normalizeSkuName(input.initialSkuName ?? "");
   const skuPriceCents = parsePriceToCents(input.initialSkuPrice);
+  const skuPricingTiers = serializeSkuPricingTiers(input.initialSkuPricingTiers);
   const saleMode = normalizeProductSaleMode(input.saleMode);
   const paymentProfile = await requireMerchantOwnedPaymentProfileForProduct(
     input.merchantAccountId,
@@ -3579,7 +3627,7 @@ export async function createMerchantProduct(input: {
         slug,
         summary: input.summary?.trim() || null,
         description: input.description?.trim() || null,
-        priceCents: skuPriceCents,
+        priceCents: getSkuLowestUnitPriceCents(skuPriceCents, skuPricingTiers),
         saleMode,
         paymentProfileId: paymentProfile.id,
         status: input.status,
@@ -3592,6 +3640,7 @@ export async function createMerchantProduct(input: {
         name: skuName,
         summary: input.initialSkuSummary?.trim() || null,
         priceCents: skuPriceCents,
+        pricingTiers: skuPricingTiers,
         enabled: true,
         sortOrder: 0,
       },
@@ -3669,10 +3718,12 @@ export async function createMerchantProductSku(input: {
   name: string;
   summary?: string;
   price: string;
+  pricingTiers?: string;
   enabled: boolean;
 }) {
   const name = normalizeSkuName(input.name);
   const priceCents = parsePriceToCents(input.price);
+  const pricingTiers = serializeSkuPricingTiers(input.pricingTiers);
 
   await prisma.$transaction(async (tx) => {
     const product = await tx.product.findFirst({
@@ -3707,6 +3758,7 @@ export async function createMerchantProductSku(input: {
         name,
         summary: input.summary?.trim() || null,
         priceCents,
+        pricingTiers,
         enabled: input.enabled,
         sortOrder: (lastSku?.sortOrder ?? -1) + 1,
       },
@@ -3722,10 +3774,12 @@ export async function updateMerchantProductSku(input: {
   name: string;
   summary?: string;
   price: string;
+  pricingTiers?: string;
   enabled: boolean;
 }) {
   const name = normalizeSkuName(input.name);
   const priceCents = parsePriceToCents(input.price);
+  const pricingTiers = serializeSkuPricingTiers(input.pricingTiers);
 
   await prisma.$transaction(async (tx) => {
     const sku = await tx.productSku.findFirst({
@@ -3757,6 +3811,7 @@ export async function updateMerchantProductSku(input: {
         name,
         summary: input.summary?.trim() || null,
         priceCents,
+        pricingTiers,
         enabled: input.enabled,
       },
     });
@@ -3874,6 +3929,7 @@ export async function createProduct(input: {
   initialSkuName?: string;
   initialSkuSummary?: string;
   initialSkuPrice: string;
+  initialSkuPricingTiers?: string;
 }) {
   const name = input.name.trim();
 
@@ -3884,6 +3940,7 @@ export async function createProduct(input: {
   const slug = slugify(input.slugValue?.trim() || name);
   const skuName = normalizeSkuName(input.initialSkuName ?? "");
   const skuPriceCents = parsePriceToCents(input.initialSkuPrice);
+  const skuPricingTiers = serializeSkuPricingTiers(input.initialSkuPricingTiers);
   const saleMode = normalizeProductSaleMode(input.saleMode);
   const paymentProfileId = await resolvePaymentProfileId(input.paymentProfileId);
 
@@ -3896,7 +3953,7 @@ export async function createProduct(input: {
         slug,
         summary: input.summary?.trim() || null,
         description: input.description?.trim() || null,
-        priceCents: skuPriceCents,
+        priceCents: getSkuLowestUnitPriceCents(skuPriceCents, skuPricingTiers),
         saleMode,
         paymentProfileId,
         status: input.status,
@@ -3909,6 +3966,7 @@ export async function createProduct(input: {
         name: skuName,
         summary: input.initialSkuSummary?.trim() || null,
         priceCents: skuPriceCents,
+        pricingTiers: skuPricingTiers,
         enabled: true,
         sortOrder: 0,
       },
@@ -3964,10 +4022,12 @@ export async function createProductSku(input: {
   name: string;
   summary?: string;
   price: string;
+  pricingTiers?: string;
   enabled: boolean;
 }) {
   const name = normalizeSkuName(input.name);
   const priceCents = parsePriceToCents(input.price);
+  const pricingTiers = serializeSkuPricingTiers(input.pricingTiers);
 
   await prisma.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
@@ -3997,6 +4057,7 @@ export async function createProductSku(input: {
         name,
         summary: input.summary?.trim() || null,
         priceCents,
+        pricingTiers,
         enabled: input.enabled,
         sortOrder: (lastSku?.sortOrder ?? -1) + 1,
       },
@@ -4011,10 +4072,12 @@ export async function updateProductSku(input: {
   name: string;
   summary?: string;
   price: string;
+  pricingTiers?: string;
   enabled: boolean;
 }) {
   const name = normalizeSkuName(input.name);
   const priceCents = parsePriceToCents(input.price);
+  const pricingTiers = serializeSkuPricingTiers(input.pricingTiers);
 
   await prisma.$transaction(async (tx) => {
     const sku = await tx.productSku.findUnique({
@@ -4035,6 +4098,7 @@ export async function updateProductSku(input: {
         name,
         summary: input.summary?.trim() || null,
         priceCents,
+        pricingTiers,
         enabled: input.enabled,
       },
     });

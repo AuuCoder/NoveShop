@@ -5149,6 +5149,7 @@ export namespace Prisma {
     name: string | null
     summary: string | null
     priceCents: number | null
+    pricingTiers: string | null
     enabled: boolean | null
     sortOrder: number | null
     createdAt: Date | null
@@ -5161,6 +5162,7 @@ export namespace Prisma {
     name: string | null
     summary: string | null
     priceCents: number | null
+    pricingTiers: string | null
     enabled: boolean | null
     sortOrder: number | null
     createdAt: Date | null
@@ -5173,6 +5175,7 @@ export namespace Prisma {
     name: number
     summary: number
     priceCents: number
+    pricingTiers: number
     enabled: number
     sortOrder: number
     createdAt: number
@@ -5197,6 +5200,7 @@ export namespace Prisma {
     name?: true
     summary?: true
     priceCents?: true
+    pricingTiers?: true
     enabled?: true
     sortOrder?: true
     createdAt?: true
@@ -5209,6 +5213,7 @@ export namespace Prisma {
     name?: true
     summary?: true
     priceCents?: true
+    pricingTiers?: true
     enabled?: true
     sortOrder?: true
     createdAt?: true
@@ -5221,6 +5226,7 @@ export namespace Prisma {
     name?: true
     summary?: true
     priceCents?: true
+    pricingTiers?: true
     enabled?: true
     sortOrder?: true
     createdAt?: true
@@ -5320,6 +5326,7 @@ export namespace Prisma {
     name: string
     summary: string | null
     priceCents: number
+    pricingTiers: string | null
     enabled: boolean
     sortOrder: number
     createdAt: Date
@@ -5351,6 +5358,7 @@ export namespace Prisma {
     name?: boolean
     summary?: boolean
     priceCents?: boolean
+    pricingTiers?: boolean
     enabled?: boolean
     sortOrder?: boolean
     createdAt?: boolean
@@ -5369,13 +5377,14 @@ export namespace Prisma {
     name?: boolean
     summary?: boolean
     priceCents?: boolean
+    pricingTiers?: boolean
     enabled?: boolean
     sortOrder?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ProductSkuOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "name" | "summary" | "priceCents" | "enabled" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["productSku"]>
+  export type ProductSkuOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "name" | "summary" | "priceCents" | "pricingTiers" | "enabled" | "sortOrder" | "createdAt" | "updatedAt", ExtArgs["result"]["productSku"]>
   export type ProductSkuInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     product?: boolean | ProductDefaultArgs<ExtArgs>
     cards?: boolean | ProductSku$cardsArgs<ExtArgs>
@@ -5396,6 +5405,7 @@ export namespace Prisma {
       name: string
       summary: string | null
       priceCents: number
+      pricingTiers: string | null
       enabled: boolean
       sortOrder: number
       createdAt: Date
@@ -5777,6 +5787,7 @@ export namespace Prisma {
     readonly name: FieldRef<"ProductSku", 'String'>
     readonly summary: FieldRef<"ProductSku", 'String'>
     readonly priceCents: FieldRef<"ProductSku", 'Int'>
+    readonly pricingTiers: FieldRef<"ProductSku", 'String'>
     readonly enabled: FieldRef<"ProductSku", 'Boolean'>
     readonly sortOrder: FieldRef<"ProductSku", 'Int'>
     readonly createdAt: FieldRef<"ProductSku", 'DateTime'>
@@ -15041,6 +15052,7 @@ export namespace Prisma {
     name: 'name',
     summary: 'summary',
     priceCents: 'priceCents',
+    pricingTiers: 'pricingTiers',
     enabled: 'enabled',
     sortOrder: 'sortOrder',
     createdAt: 'createdAt',
@@ -15277,7 +15289,8 @@ export namespace Prisma {
     id: 'id',
     productId: 'productId',
     name: 'name',
-    summary: 'summary'
+    summary: 'summary',
+    pricingTiers: 'pricingTiers'
   };
 
   export type ProductSkuOrderByRelevanceFieldEnum = (typeof ProductSkuOrderByRelevanceFieldEnum)[keyof typeof ProductSkuOrderByRelevanceFieldEnum]
@@ -15750,6 +15763,7 @@ export namespace Prisma {
     name?: StringFilter<"ProductSku"> | string
     summary?: StringNullableFilter<"ProductSku"> | string | null
     priceCents?: IntFilter<"ProductSku"> | number
+    pricingTiers?: StringNullableFilter<"ProductSku"> | string | null
     enabled?: BoolFilter<"ProductSku"> | boolean
     sortOrder?: IntFilter<"ProductSku"> | number
     createdAt?: DateTimeFilter<"ProductSku"> | Date | string
@@ -15765,6 +15779,7 @@ export namespace Prisma {
     name?: SortOrder
     summary?: SortOrderInput | SortOrder
     priceCents?: SortOrder
+    pricingTiers?: SortOrderInput | SortOrder
     enabled?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
@@ -15784,6 +15799,7 @@ export namespace Prisma {
     name?: StringFilter<"ProductSku"> | string
     summary?: StringNullableFilter<"ProductSku"> | string | null
     priceCents?: IntFilter<"ProductSku"> | number
+    pricingTiers?: StringNullableFilter<"ProductSku"> | string | null
     enabled?: BoolFilter<"ProductSku"> | boolean
     sortOrder?: IntFilter<"ProductSku"> | number
     createdAt?: DateTimeFilter<"ProductSku"> | Date | string
@@ -15799,6 +15815,7 @@ export namespace Prisma {
     name?: SortOrder
     summary?: SortOrderInput | SortOrder
     priceCents?: SortOrder
+    pricingTiers?: SortOrderInput | SortOrder
     enabled?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
@@ -15819,6 +15836,7 @@ export namespace Prisma {
     name?: StringWithAggregatesFilter<"ProductSku"> | string
     summary?: StringNullableWithAggregatesFilter<"ProductSku"> | string | null
     priceCents?: IntWithAggregatesFilter<"ProductSku"> | number
+    pricingTiers?: StringNullableWithAggregatesFilter<"ProductSku"> | string | null
     enabled?: BoolWithAggregatesFilter<"ProductSku"> | boolean
     sortOrder?: IntWithAggregatesFilter<"ProductSku"> | number
     createdAt?: DateTimeWithAggregatesFilter<"ProductSku"> | Date | string
@@ -17015,6 +17033,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -17030,6 +17049,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -17043,6 +17063,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17058,6 +17079,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17072,6 +17094,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -17083,6 +17106,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -17095,6 +17119,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -18524,6 +18549,7 @@ export namespace Prisma {
     name?: SortOrder
     summary?: SortOrder
     priceCents?: SortOrder
+    pricingTiers?: SortOrder
     enabled?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
@@ -18541,6 +18567,7 @@ export namespace Prisma {
     name?: SortOrder
     summary?: SortOrder
     priceCents?: SortOrder
+    pricingTiers?: SortOrder
     enabled?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
@@ -18553,6 +18580,7 @@ export namespace Prisma {
     name?: SortOrder
     summary?: SortOrder
     priceCents?: SortOrder
+    pricingTiers?: SortOrder
     enabled?: SortOrder
     sortOrder?: SortOrder
     createdAt?: SortOrder
@@ -20465,6 +20493,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -20478,6 +20507,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -20672,6 +20702,7 @@ export namespace Prisma {
     name?: StringFilter<"ProductSku"> | string
     summary?: StringNullableFilter<"ProductSku"> | string | null
     priceCents?: IntFilter<"ProductSku"> | number
+    pricingTiers?: StringNullableFilter<"ProductSku"> | string | null
     enabled?: BoolFilter<"ProductSku"> | boolean
     sortOrder?: IntFilter<"ProductSku"> | number
     createdAt?: DateTimeFilter<"ProductSku"> | Date | string
@@ -21399,6 +21430,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -21413,6 +21445,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -21547,6 +21580,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21561,6 +21595,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21720,6 +21755,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -21734,6 +21770,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -21980,6 +22017,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -21994,6 +22032,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -22519,6 +22558,7 @@ export namespace Prisma {
     name: string
     summary?: string | null
     priceCents: number
+    pricingTiers?: string | null
     enabled?: boolean
     sortOrder?: number
     createdAt?: Date | string
@@ -22569,6 +22609,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -22582,6 +22623,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -22595,6 +22637,7 @@ export namespace Prisma {
     name?: StringFieldUpdateOperationsInput | string
     summary?: NullableStringFieldUpdateOperationsInput | string | null
     priceCents?: IntFieldUpdateOperationsInput | number
+    pricingTiers?: NullableStringFieldUpdateOperationsInput | string | null
     enabled?: BoolFieldUpdateOperationsInput | boolean
     sortOrder?: IntFieldUpdateOperationsInput | number
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string

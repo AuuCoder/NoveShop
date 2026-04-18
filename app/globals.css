@@ -3532,6 +3532,75 @@ body:has(.admin-route) .field select {
   gap: 12px;
 }
 
+.tier-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.tier-editor-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tier-editor-toolbar .small-copy {
+  margin: 0;
+}
+
+.tier-editor-add,
+.tier-editor-remove {
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.tier-editor-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tier-editor-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(130, 146, 196, 0.14);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.tier-editor-empty {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px dashed rgba(130, 146, 196, 0.2);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.tier-editor-empty strong,
+.tier-editor-empty p {
+  margin: 0;
+}
+
+.tier-editor-empty p,
+.tier-editor-feedback {
+  line-height: 1.6;
+}
+
+.tier-editor-feedback {
+  margin: 0;
+}
+
+.tier-editor-feedback.is-success {
+  color: var(--success);
+}
+
+.tier-editor-feedback.is-warning {
+  color: var(--warning);
+}
+
 .admin-check-row {
   display: inline-flex;
   align-items: center;
@@ -5052,6 +5121,20 @@ body:has(.admin-route) .field select {
   .admin-sku-card,
   .admin-sku-create {
     padding: 14px;
+  }
+
+  .tier-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tier-editor-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tier-editor-add,
+  .tier-editor-remove {
+    width: fit-content;
   }
 
   .admin-merchant-summary-panel,
