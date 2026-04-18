@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { refreshPublicOrderAction } from "@/app/actions";
 import { describeOrderAmount, getOrderByPublicToken, getOrderStatusLabel, getOrderStatusTone, refreshOrderByPublicToken } from "@/lib/shop";
+import { buildStorefrontPath } from "@/lib/storefront";
 import { formatDateTime } from "@/lib/utils";
 
 export default async function OrderDetailPage({
@@ -33,6 +34,7 @@ export default async function OrderDetailPage({
   }
 
   const paymentUrl = order.hostedCheckoutUrl || order.checkoutUrl;
+  const storefrontPath = buildStorefrontPath(order.paymentProfile?.ownerId);
 
   return (
     <>
@@ -107,7 +109,7 @@ export default async function OrderDetailPage({
             {order.failureMessage ? <p className="helper-text">{order.failureMessage}</p> : null}
 
             <div className="button-row">
-              <Link href="/" className="button-link">
+              <Link href={storefrontPath} className="button-link">
                 返回购物首页
               </Link>
             </div>
