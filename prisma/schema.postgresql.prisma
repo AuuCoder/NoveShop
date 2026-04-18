@@ -1,0 +1,319 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma-postgresql-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProductSaleMode {
+  SINGLE
+  MULTI
+}
+
+enum CardItemStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
+enum ShopOrderStatus {
+  PENDING_PAYMENT
+  FULFILLED
+  FAILED
+  EXPIRED
+}
+
+enum PaymentAttemptStatus {
+  CREATED
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum SyncTaskStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+model MerchantAccount {
+  id                       String          @id @default(cuid())
+  name                     String
+  email                    String          @unique
+  passwordHash             String
+  isActive                 Boolean         @default(true)
+  storeAnnouncementEnabled Boolean         @default(false)
+  storeAnnouncementTitle   String?
+  storeAnnouncementBody    String?
+  createdAt                DateTime        @default(now())
+  updatedAt                DateTime        @updatedAt
+  paymentProfile           PaymentProfile?
+
+  @@index([isActive, createdAt])
+}
+
+model PlatformStorefrontSettings {
+  id                  String   @id @default("platform")
+  announcementEnabled Boolean  @default(false)
+  announcementTitle   String?
+  announcementBody    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Product {
+  id               String          @id @default(cuid())
+  name             String
+  slug             String          @unique
+  summary          String?
+  description      String?
+  priceCents       Int
+  saleMode         ProductSaleMode @default(SINGLE)
+  paymentProfileId String?
+  paymentProfile   PaymentProfile? @relation(fields: [paymentProfileId], references: [id], onDelete: SetNull)
+  status           ProductStatus   @default(DRAFT)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  skus             ProductSku[]
+  cards            CardItem[]
+  orders           ShopOrder[]
+
+  @@index([status, createdAt])
+  @@index([paymentProfileId, createdAt])
+}
+
+model ProductSku {
+  id         String    @id @default(cuid())
+  productId  String
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String
+  summary    String?
+  priceCents Int
+  enabled    Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  cards      CardItem[]
+  orders     ShopOrder[]
+
+  @@index([productId, enabled, sortOrder, createdAt])
+  @@index([productId, sortOrder, createdAt])
+}
+
+model PaymentProfile {
+  id                 String      @id @default(cuid())
+  ownerId            String?     @unique
+  owner              MerchantAccount? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  name               String
+  merchantCode       String
+  apiKey             String
+  apiSecret          String
+  notifySecret       String?
+  defaultChannelCode String
+  enabledChannelCodes String?
+  isActive           Boolean     @default(true)
+  isDefault          Boolean     @default(false)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  products           Product[]
+  orders             ShopOrder[]
+  revisions          PaymentProfileRevision[]
+
+  @@index([isActive, isDefault, createdAt])
+}
+
+model ControlAuditLog {
+  id                String   @id @default(cuid())
+  scope             String
+  actorType         String
+  actorId           String?
+  actorLabel        String
+  merchantAccountId String?
+  paymentProfileId  String?
+  actionType        String
+  riskLevel         String
+  outcome           String   @default("SUCCEEDED")
+  targetType        String
+  targetId          String?
+  targetLabel       String
+  summary           String
+  detail            String?
+  payload           String?
+  reviewStatus      String   @default("PENDING")
+  reviewerType      String?
+  reviewerId        String?
+  reviewerLabel     String?
+  reviewNote        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime @default(now())
+
+  @@index([scope, createdAt])
+  @@index([merchantAccountId, createdAt])
+  @@index([paymentProfileId, createdAt])
+  @@index([actionType, createdAt])
+  @@index([riskLevel, createdAt])
+  @@index([outcome, createdAt])
+  @@index([reviewStatus, createdAt])
+}
+
+model PaymentProfileRevision {
+  id               String   @id @default(cuid())
+  paymentProfileId String
+  paymentProfile   PaymentProfile @relation(fields: [paymentProfileId], references: [id], onDelete: Cascade)
+  version          Int
+  sourceScope      String
+  actorType        String
+  actorId          String?
+  actorLabel       String
+  changeType       String
+  summary          String
+  snapshot         String
+  createdAt        DateTime @default(now())
+
+  @@unique([paymentProfileId, version])
+  @@index([paymentProfileId, createdAt])
+  @@index([sourceScope, createdAt])
+}
+
+model CardItem {
+  id         String         @id @default(cuid())
+  productId  String
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  skuId      String
+  sku        ProductSku     @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  batchName  String?
+  secret     String
+  status     CardItemStatus @default(AVAILABLE)
+  orderId    String?
+  order      ShopOrder?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  reservedAt DateTime?
+  soldAt     DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([productId, status, createdAt])
+  @@index([skuId, status, createdAt])
+  @@index([orderId])
+}
+
+model ShopOrder {
+  id                     String          @id @default(cuid())
+  orderNo                String          @unique
+  publicToken            String          @unique
+  productId              String
+  product                Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  paymentProfileId       String?
+  paymentProfile         PaymentProfile? @relation(fields: [paymentProfileId], references: [id], onDelete: SetNull)
+  skuId                  String
+  sku                    ProductSku      @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  quantity               Int
+  customerEmail          String
+  amountCents            Int
+  channelCode            String
+  status                 ShopOrderStatus @default(PENDING_PAYMENT)
+  novapayOrderId         String?
+  novapayStatus          String?
+  checkoutUrl            String?
+  hostedCheckoutUrl      String?
+  failureMessage         String?
+  expiresAt              DateTime
+  paidAt                 DateTime?
+  fulfilledAt            DateTime?
+  lastSyncedAt           DateTime?
+  lastNovaCreateResponse String?
+  lastNovaPayload        String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  cards                  CardItem[]
+  paymentAttempts        ShopPaymentAttempt[]
+  syncTasks              OrderSyncTask[]
+
+  @@index([status, expiresAt])
+  @@index([customerEmail, createdAt])
+  @@index([productId, createdAt])
+  @@index([paymentProfileId, createdAt])
+  @@index([skuId, createdAt])
+}
+
+model ShopPaymentAttempt {
+  id                       String               @id @default(cuid())
+  shopOrderId              String
+  shopOrder                ShopOrder            @relation(fields: [shopOrderId], references: [id], onDelete: Cascade)
+  externalOrderId          String               @unique
+  novapayOrderId           String?
+  merchantChannelAccountId String?
+  channelCode              String
+  amountCents              Int
+  status                   PaymentAttemptStatus @default(CREATED)
+  checkoutUrl              String?
+  hostedCheckoutUrl        String?
+  expiresAt                DateTime?
+  callbackEventId          String?
+  traceId                  String
+  createRequestPayload     String?
+  createResponsePayload    String?
+  lastRemotePayload        String?
+  lastSyncedAt             DateTime?
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  syncTasks                OrderSyncTask[]
+
+  @@index([shopOrderId, createdAt])
+  @@index([status, createdAt])
+  @@index([merchantChannelAccountId, createdAt])
+  @@index([traceId])
+}
+
+model WebhookEventLog {
+  id               String   @id @default(cuid())
+  provider         String
+  externalEventId  String
+  externalOrderId  String?
+  eventType        String
+  traceId          String?
+  signatureValid   Boolean
+  requestHeaders   String?
+  requestBody      String
+  processingStatus String
+  processingError  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([provider, externalEventId])
+  @@index([eventType, createdAt])
+  @@index([provider, externalOrderId, createdAt])
+  @@index([processingStatus, createdAt])
+}
+
+model OrderSyncTask {
+  id               String         @id @default(cuid())
+  taskType         String
+  shopOrderId      String?
+  shopOrder        ShopOrder?     @relation(fields: [shopOrderId], references: [id], onDelete: SetNull)
+  paymentAttemptId String?
+  paymentAttempt   ShopPaymentAttempt? @relation(fields: [paymentAttemptId], references: [id], onDelete: SetNull)
+  status           SyncTaskStatus @default(PENDING)
+  scheduledAt      DateTime
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  retryCount       Int            @default(0)
+  lastError        String?
+  payload          String?
+  createdAt        DateTime       @default(now())
+
+  @@index([status, scheduledAt])
+  @@index([shopOrderId, status, scheduledAt])
+  @@index([paymentAttemptId, status, scheduledAt])
+}

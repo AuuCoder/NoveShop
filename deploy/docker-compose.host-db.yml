@@ -1,0 +1,48 @@
+name: noveshop
+
+services:
+  db-push:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run db:push:postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+    profiles: ["ops"]
+
+  preflight:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run env:check:prod
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: "no"
+    profiles: ["ops"]
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run start
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3001/api/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5

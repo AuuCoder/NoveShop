@@ -1,0 +1,73 @@
+name: noveshop
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${NOVESHOP_POSTGRES_DB:-noveshop}
+      POSTGRES_USER: ${NOVESHOP_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${NOVESHOP_POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - noveshop-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${NOVESHOP_POSTGRES_USER:-postgres} -d ${NOVESHOP_POSTGRES_DB:-noveshop}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  db-push:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run db:push:postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles: ["ops"]
+
+  preflight:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run env:check:prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    profiles: ["ops"]
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    env_file:
+      - ../.env
+    command: npm run start
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3001/api/health').then((response)=>process.exit(response.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  noveshop-postgres-data:
