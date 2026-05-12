@@ -158,36 +158,36 @@ function getStorefrontCopy(
 
   return {
     allProducts: "全部商品",
-    announcementBadgeMerchant: "商户公告",
+    announcementBadgeMerchant: "合作方公告",
     announcementBadgePlatform: "平台公告",
     announcementFallback: "当前店铺已启用公告展示。",
     availableSkus: "可购规格",
     availableStock: "可售库存",
     backHome: "返回首页",
     clearFilter: "清除筛选",
-    ctaMulti: "选择 SKU",
+    ctaMulti: "选择规格",
     ctaSingle: "立即购买",
-    disabledPaymentProfile: "当前商户的 NovaPay 收款配置已停用，商品仍可展示，但下单会被拦截。",
+    disabledPaymentProfile: "当前合作方的收款配置已停用，商品仍可展示，但暂时无法继续下单。",
     introCopy: platformStore
-      ? "这里是管理员自己的官方店铺，承接平台直营商品展示、下单和支付。商户商品依然保留各自独立店铺，不会混卖。"
-      : `这里是 ${merchantName ?? "当前商户"} 的专属前台，只展示这个商户自己绑定到 NovaPay 商户名下的商品、SKU 和库存。`,
-    merchantPaymentDisabled: "商户收款未启用",
-    merchantPaymentEnabled: "商户收款已启用",
+      ? "这里是平台官方渠道，承接平台自营商品展示、下单与支付。合作方商品依然保留各自独立站点，不会混合展示。"
+      : `这里是 ${merchantName ?? "当前合作方"} 的专属站点，只展示该主体自己管理的商品、规格与库存。`,
+    merchantPaymentDisabled: "收款未启用",
+    merchantPaymentEnabled: "收款已启用",
     merchantStoresOnline: "",
-    missingPaymentProfile: "当前商户还没有配置收款参数，前台暂时只能浏览，无法正常下单。",
-    noProducts: "当前商户还没有上架商品，后续可在商户中心继续补充商品和 SKU。",
-    noResults: "这个商户店铺里没有找到匹配的商品或 SKU，可以换个关键词再试试。",
+    missingPaymentProfile: "当前合作方还没有完成收款配置，站点暂时只能浏览，无法继续下单。",
+    noProducts: "当前站点还没有上架商品，完成商品与规格配置后即可在这里展示。",
+    noResults: "当前站点没有匹配这个关键词的商品或规格，可以换个词再试试。",
     peerStoreCount: "",
-    platformStoreBadge: "平台官方店",
-    platformStoreTitle: "管理员直营网",
+    platformStoreBadge: "平台官方渠道",
+    platformStoreTitle: "平台官方渠道",
     productCount: "上架商品",
-    productFallback: platformStore ? "当前商品来自平台官方店铺。" : "当前商品来自这个商户自己的专属前台。",
-    productSectionTitle: "店铺商品",
-    productSummaryMulti: "适合用来展示多规格发卡能力。",
-    productSummarySingle: "默认规格直购，适合做轻量发卡店铺。",
+    productFallback: platformStore ? "当前商品来自平台官方渠道。" : "当前商品来自该合作方的专属站点。",
+    productSectionTitle: "站点商品",
+    productSummaryMulti: "适合展示多规格、多价格与多库存的数字商品方案。",
+    productSummarySingle: "默认规格直购，适合标准化数字商品交付。",
     productTagUpdatedAt: "更新于",
     searchKeyword: "当前关键词",
-    title: platformStore ? "管理员直营网" : merchantName ?? "商户店铺",
+    title: platformStore ? "平台官方渠道" : merchantName ?? "合作方站点",
   };
 }
 
@@ -273,17 +273,17 @@ export function StorefrontPageClient({
           <h1 className="panel-title">{copy.title}</h1>
         </div>
 
-        <div className="panel-body">
+        <div className="panel-body storefront-overview-body">
           <p className="section-copy">{copy.introCopy}</p>
-          <div className="button-row compact">
+          <div className="button-row compact storefront-overview-badges">
             <span className={`badge ${platformStore || paymentProfileActive ? "success" : "warning"}`}>
               {platformStore ? copy.platformStoreBadge : paymentProfileActive ? copy.merchantPaymentEnabled : copy.merchantPaymentDisabled}
             </span>
-            <span className="badge muted">
-              {language === "zh"
-                ? `${peerStoreCount} 个商户店铺已上线`
+              <span className="badge muted">
+                {language === "zh"
+                ? `${peerStoreCount} 个合作方站点已上线`
                 : `${peerStoreCount} merchant storefronts live`}
-            </span>
+              </span>
           </div>
           <div className="button-row">
             <Link href="/" className="button-link">
@@ -299,8 +299,8 @@ export function StorefrontPageClient({
           <h2 className="panel-title">{copy.productSectionTitle}</h2>
         </div>
 
-        <div className="panel-body">
-          <div className="stats-strip">
+        <div className="panel-body storefront-catalog-body">
+          <div className="stats-strip storefront-stats-strip">
             <article className="stat-chip">
               <span className="stat-label">{copy.productCount}</span>
               <strong>{products.length}</strong>
@@ -313,18 +313,6 @@ export function StorefrontPageClient({
               <span className="stat-label">{copy.availableStock}</span>
               <strong>{totalStock}</strong>
             </article>
-          </div>
-
-          <div className="chip-list">
-            <Link href={storefrontPath} className="chip chip-primary">
-              {copy.allProducts}
-            </Link>
-            {products.map((product) => (
-              <a key={product.id} href={`#product-${product.id}`} className="chip">
-                <span className="chip-dot">{product.name.slice(0, 1)}</span>
-                {product.name}
-              </a>
-            ))}
           </div>
 
           {keyword ? (
@@ -349,11 +337,17 @@ export function StorefrontPageClient({
               <p className="empty-note">{copy.noProducts}</p>
             </div>
           ) : (
-            <div className="goods-grid">
+            <div className="goods-grid storefront-product-grid">
               {filteredProducts.map((product) => {
                 const primarySku = product.skus[0] ?? null;
                 const hasStock = product.stock.available > 0;
                 const modeLabel = getProductModeLabel(language, product.saleMode);
+                const modeBadgeText = getProductModeBadgeText(
+                  language,
+                  product.saleMode,
+                  product.skus.length,
+                  hasStock,
+                );
                 const metaCopy =
                   product.saleMode === "MULTI"
                     ? product.skus
@@ -363,42 +357,46 @@ export function StorefrontPageClient({
                     : primarySku?.summary || product.summary || copy.productSummarySingle;
 
                 return (
-                  <article key={product.id} id={`product-${product.id}`} className="goods-card">
-                    <div>
-                      <div className="goods-thumb">
-                        <span className="goods-thumb-mark">{product.name.slice(0, 2)}</span>
-                        <p>{product.summary || copy.productFallback}</p>
-                      </div>
-                      <div className="goods-content">
-                        <div className="goods-head">
-                          <span className="price-chip">{formatCurrency(product.startingPriceCents, language)}</span>
-                          <span className={`badge ${hasStock ? "success" : "muted"}`}>
-                            {getProductModeBadgeText(language, product.saleMode, product.skus.length, hasStock)}
-                          </span>
+                  <article key={product.id} id={`product-${product.id}`} className="goods-card storefront-product-card">
+                    <div className="goods-content storefront-product-content">
+                      <div className="goods-head storefront-product-head">
+                        <div className="storefront-product-title-group">
+                          <h3>{product.name}</h3>
+                          <p className="card-meta storefront-product-summary">{metaCopy}</p>
                         </div>
-                        <h3>{product.name}</h3>
-                        <p className="card-meta">{metaCopy}</p>
+                        <span className="price-chip storefront-product-price">
+                          {formatCurrency(product.startingPriceCents, language)}
+                        </span>
                       </div>
+
+                      <div className="storefront-product-meta-row">
+                        <span className={`badge ${hasStock ? "success" : "muted"}`}>{modeBadgeText}</span>
+                        <span className="product-inline-tag">{modeLabel}</span>
+                      </div>
+
+                      <p className="small-copy storefront-product-note">
+                        {product.summary || copy.productFallback}
+                      </p>
                     </div>
 
-                    <div className="goods-foot">
+                    <div className="goods-foot storefront-product-foot">
                       <div className="data-row">
                         <span className="data-key">{copy.availableStock}</span>
                         <strong>{product.stock.available}</strong>
                       </div>
                       <div className="data-row">
-                        <span className="data-key">{language === "zh" ? "商品模式" : "Product mode"}</span>
-                        <strong>{modeLabel}</strong>
+                        <span className="data-key">{copy.availableSkus}</span>
+                        <strong>{product.skus.length}</strong>
                       </div>
 
-                      <div className="button-row">
+                      <div className="button-row storefront-product-actions">
                         <Link
                           href={
                             platformStore
                               ? buildPlatformProductPath(product.slug)
                               : buildMerchantStorefrontProductPath(merchantId, product.slug)
                           }
-                          className="button"
+                          className="button storefront-product-button"
                         >
                           {product.saleMode === "MULTI" ? copy.ctaMulti : copy.ctaSingle}
                         </Link>

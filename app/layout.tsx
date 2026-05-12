@@ -5,8 +5,8 @@ import { PublicHeader } from "@/app/public-header";
 import { SitePreferencesProvider } from "@/app/ui-preferences";
 
 export const metadata: Metadata = {
-  title: "NoveShop | 多商户数字商品平台",
-  description: "支持官方店、商户独立店、多 SKU、NovaPay 多商户支付与自动发卡的数字商品平台。",
+  title: "NoveShop | 企业级数字商品平台",
+  description: "面向平台自营与合作方协同运营，支持多主体支付治理、库存管理与自动履约的数字商品平台。",
 };
 
 export default function RootLayout({

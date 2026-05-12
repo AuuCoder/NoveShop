@@ -29,7 +29,7 @@ export default async function OrderDetailPage({
         order = refreshed;
       }
     } catch (error) {
-      syncError = error instanceof Error ? error.message : "查单失败，请稍后手动刷新。";
+      syncError = error instanceof Error ? error.message : "状态刷新失败，请稍后手动重试。";
     }
   }
 
@@ -44,7 +44,7 @@ export default async function OrderDetailPage({
         <article className="panel">
           <div className="panel-header">
             <span className="panel-icon">◇</span>
-            <h1 className="panel-title">订单 {order.orderNo}</h1>
+            <h1 className="panel-title">订单服务详情 {order.orderNo}</h1>
           </div>
 
           <div className="panel-body">
@@ -60,7 +60,7 @@ export default async function OrderDetailPage({
                 <dd>{order.product.name}</dd>
               </div>
               <div className="data-row">
-                <dt className="data-key">SKU</dt>
+                <dt className="data-key">规格</dt>
                 <dd>{order.sku.name}</dd>
               </div>
               <div className="data-row">
@@ -84,7 +84,7 @@ export default async function OrderDetailPage({
                 <dd>{formatDateTime(order.paidAt)}</dd>
               </div>
               <div className="data-row">
-                <dt className="data-key">NovaPay 状态</dt>
+                <dt className="data-key">支付通道状态</dt>
                 <dd>{order.novapayStatus ?? "未同步"}</dd>
               </div>
             </dl>
@@ -93,14 +93,14 @@ export default async function OrderDetailPage({
               <div className="button-row">
                 {paymentUrl ? (
                   <a href={paymentUrl} className="button" target="_blank" rel="noreferrer">
-                    前往支付
+                    继续支付
                   </a>
                 ) : null}
 
                 <form action={refreshPublicOrderAction}>
                   <input type="hidden" name="publicToken" value={order.publicToken} />
                   <button type="submit" className="button-secondary">
-                    手动刷新状态
+                    手动刷新进度
                   </button>
                 </form>
               </div>
@@ -110,7 +110,7 @@ export default async function OrderDetailPage({
 
             <div className="button-row">
               <Link href={storefrontPath} className="button-link">
-                返回购物首页
+                返回商品入口
               </Link>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default async function OrderDetailPage({
         <aside className="panel">
           <div className="panel-header">
             <span className="panel-icon">◆</span>
-            <h2 className="panel-title">发货内容</h2>
+            <h2 className="panel-title">交付内容</h2>
           </div>
 
           <div className="panel-body">
@@ -135,14 +135,14 @@ export default async function OrderDetailPage({
             ) : (
               <div className="sub-panel">
                 <p className="empty-note">
-                  当前订单还未发货。支付成功后，这里会自动显示卡密内容。
+                  当前订单尚未完成交付。支付确认后，这里会自动展示对应的交付内容。
                 </p>
               </div>
             )}
 
             <div className="button-row">
               <Link href={`/query?orderNo=${encodeURIComponent(order.orderNo)}&email=${encodeURIComponent(order.customerEmail)}`} className="button-link">
-                用邮箱继续查单
+                返回订单查询
               </Link>
             </div>
           </div>

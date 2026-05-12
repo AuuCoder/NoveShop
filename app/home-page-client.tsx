@@ -92,11 +92,11 @@ function renderHeroTitle(language: SiteLanguage) {
   if (language === "zh") {
     return (
       <>
-        <span className="hero-title-line">把官方直营、商户自营</span>
+        <span className="hero-title-line">把平台官方渠道与</span>
         <span className="hero-title-line">
-          与 <span className="hero-title-accent">多商户支付</span> 统一到
+          <span className="hero-title-accent">合作方协同运营</span>统一到
         </span>
-        <span className="hero-title-line">一套数字商品中台</span>
+        <span className="hero-title-line">一套数字商品业务底座</span>
       </>
     );
   }
@@ -366,57 +366,57 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
     capabilityCards: [
       {
         description:
-          "同一套商品模型里支持单规格直购与多 SKU 规格矩阵，适合从简单发卡到复杂套餐销售的不同场景。",
-        detail: `当前官方店已开放 ${multiSkuProductCount} 个多 SKU 商品。`,
+          "同一套商品模型可同时支持单规格直购与多 SKU 规格矩阵，适用于标准化商品与复杂组合方案并行运营。",
+        detail: `当前官方渠道已开放 ${multiSkuProductCount} 个多规格商品。`,
         eyebrow: "商品模型",
         title: "单商品与多 SKU 共存",
       },
       {
         description:
-          "库存、预占、已售都在 SKU 维度跟踪，支付成功后自动履约，避免多规格混发和库存对不上。",
-        detail: `官方店当前可即时履约 ${totalStock} 份库存。`,
+          "库存、预占与已售状态统一在 SKU 维度追踪，支付确认后自动触发履约，降低人工处理与库存错配风险。",
+        detail: `官方渠道当前可即时履约 ${totalStock} 份库存。`,
         eyebrow: "库存履约",
         title: "库存按 SKU 精细履约",
       },
       {
         description:
-          "商户只能维护自己的商品、收款参数、订单和客户数据，平台可以统一运营，但不会把商品混卖到同一个前台。",
-        detail: `当前商户侧总计 ${totalMerchantProducts} 个商品、${totalMerchantSkuCount} 个 SKU。`,
+          "合作方仅维护自己归属的商品、订单与收款参数，平台可以统一治理，但不会打破各主体的数据与渠道边界。",
+        detail: `当前合作方侧总计 ${totalMerchantProducts} 个商品、${totalMerchantSkuCount} 个 SKU。`,
         eyebrow: "数据隔离",
         title: "多商户数据天然隔离",
       },
       {
         description:
-          "首页负责品牌介绍，官方店与商户店负责售卖，后台与商户中心负责运营和配置，避免页面职责过载。",
-        detail: "品牌官网、官方店、商户店和后台导航已经按模块拆开。",
+          "首页负责品牌表达，官方渠道与合作方站点负责成交，业务中心负责运营与配置，避免页面职责过载。",
+        detail: "品牌官网、官方渠道、合作方站点与业务中心已经完成分层。",
         eyebrow: "运营结构",
         title: "前中后台职责分层",
       },
     ],
     flowSteps: [
       {
-        copy: "管理员和商户分别维护自己的 NovaPay 商户参数，确定订单到底该由谁收款。",
+        copy: "平台与合作方分别维护各自的收款参数，确保每笔订单都能准确归属到对应的业务主体。",
         step: "01",
         title: "配置收款主体",
       },
       {
-        copy: "商品可配置单商品或多 SKU，价格、规格和库存都围绕具体 SKU 进行管理。",
+        copy: "商品可配置单规格直购或多规格矩阵，价格、规格与库存围绕具体商品方案统一管理。",
         step: "02",
-        title: "管理商品与 SKU",
+        title: "管理商品与规格",
       },
       {
-        copy: "官方店和商户店各自展示自己的商品，不再把不同主体的商品混合展示在一个前台。",
+        copy: "平台官方渠道与合作方专属站点分别承接各自商品，避免不同主体混合展示与交叉成交。",
         step: "03",
         title: "店铺独立售卖",
       },
       {
-        copy: "下单后创建支付单，回调与查单同步状态，成功后自动履约并交付卡密内容。",
+        copy: "下单后统一创建支付单，回调与查单同步状态，支付确认后自动触发履约与交付。",
         step: "04",
-        title: "回调确认并发卡",
+        title: "确认支付并自动履约",
       },
     ],
     hero: {
-      chip: "企业级多商户发卡平台",
+      chip: "企业级数字商品平台",
       commandEyebrow: "平台运营视图",
       commandStages: [
         {
@@ -426,171 +426,171 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           value: "/",
         },
         {
-          detail: "平台直营网商品统一在官方店成交，不与商户商品混卖。",
-          label: "官方店",
+          detail: "平台自营商品统一在官方渠道成交，不与合作方商品混合展示。",
+          label: "官方渠道",
           step: "02",
           value: "/store/platform",
         },
         {
-          detail: "每个商户都有自己的专属前台、商品目录和 SKU 库存。",
-          label: "商户店",
+          detail: "每个合作方都拥有独立站点、商品目录与规格库存空间。",
+          label: "合作方站点",
           step: "03",
           value: "/store/[merchantId]",
         },
         {
-          detail: "订单按商品绑定的商户主体收款，回调成功后自动交付。",
+          detail: "订单按商品归属的业务主体收款，状态确认后自动触发交付。",
           label: "支付履约",
           step: "04",
-          value: "NovaPay -> 自动发卡",
+          value: "支付确认 -> 自动交付",
         },
       ],
-      commandTitle: "把首页、店铺、支付路由和发卡履约收在一张运营视图里",
+      commandTitle: "把品牌入口、官方渠道、合作方站点与自动履约串成一套清晰的业务视图",
       kicker: "企业级数字商品平台",
-      lead: "NoveShop 的首页现在回归成企业官网形态，重点展示平台能力与入口分层。管理员官方店固定走 `/store/platform`，商户则各自拥有 `/store/[merchantId]` 的独立前台，商品、SKU、库存、NovaPay 参数和订单归属全部隔离。",
-      signals: ["官方直营", "商户自营", "NovaPay 多商户", "SKU 库存履约"],
-      title: "把官方直营、商户自营和多商户支付统一到一套数字商品中台",
+      lead: "NoveShop 首页聚焦能力展示与业务架构表达。平台官方渠道与合作方专属站点彼此独立，商品、库存、订单归属与收款配置按主体隔离管理。",
+      signals: ["平台官方渠道", "合作方站点", "统一支付治理", "自动交付"],
+      title: "面向平台运营与合作方协同的数字商品业务底座",
     },
     merchant: {
       emptyChip: "等待商品上架",
-      onboardingAction: "立即开始",
-      onboardingEyebrow: "商户入驻",
+      onboardingAction: "申请接入",
+      onboardingEyebrow: "合作方接入",
       onboardingDetail:
-        "可以先注册商户、配置各自的 NovaPay 参数，再在商户中心创建商品与 SKU，首页就会自动反映店铺网络规模。",
-      onboardingMetric: "下一步：注册商户并配置收款",
-      onboardingTitle: "当前还没有可展示的商户样例",
-      sampleDescription: "独立商户店，拥有自己的商品目录、SKU、库存与 NovaPay 收款参数。",
-      sampleEyebrow: "商户样例",
-      shopEntryLabel: "店铺入口",
-      visitStore: "进入商户店",
+        "完成合作方账号开通、收款配置与商品初始化后，平台站点网络会自动扩展，形成清晰的多主体运营结构。",
+      onboardingMetric: "下一步：提交接入并完成收款配置",
+      onboardingTitle: "当前还没有可展示的合作方案例",
+      sampleDescription: "合作方独立站点，拥有专属商品目录、库存与收款配置。",
+      sampleEyebrow: "合作方案例",
+      shopEntryLabel: "站点入口",
+      visitStore: "访问站点",
     },
     preview: {
-      emptyProducts: "当前管理员官方店还没有可展示的商品，先去后台创建商品和 SKU 即可。",
-      emptySearch: "管理员官方店里没有命中这个关键词的商品，可以换个词再试试。",
-      heading: keyword ? `管理员官方店搜索结果：${keyword}` : "管理员官方店商品预览",
+      emptyProducts: "当前官方渠道还没有可展示的商品，完成商品与规格配置后即可在这里呈现。",
+      emptySearch: "当前官方渠道没有命中这个关键词的商品，可以换个词再试试。",
+      heading: keyword ? `官方渠道搜索结果：${keyword}` : "官方渠道商品预览",
       intro: keyword
-        ? "顶部搜索框会直接筛选官方店商品和 SKU。"
-        : "首页顶部搜索框会直达官方店的商品与 SKU 检索。",
+        ? "顶部搜索框会直接筛选官方渠道中的商品与规格。"
+        : "顶部搜索框可直接检索官方渠道中的商品与规格。",
       orderQuery: "订单查询",
       productMode: "商品模式",
       stock: "可售库存",
-      viewFullStore: "查看完整官方店",
+      viewFullStore: "查看官方渠道",
     },
     sections: {
       architecture: {
-        copy: "这套系统的关键不是一个支付按钮，而是订单、回调、查单与履约能按商户主体稳定串起来。",
+        copy: "这套系统的关键不只是一个支付入口，而是订单、回调、查询与履约能够按业务主体稳定闭环。",
         kicker: "业务闭环",
-        title: "从收款配置到自动发卡的业务闭环",
+        title: "从收款配置到自动交付的业务闭环",
       },
       capabilities: {
-        copy: "核心重点不只是能支付，而是商品模型、支付主体、库存和交付路径能持续跑起来。",
+        copy: "核心重点不只是接入支付，而是让商品模型、支付主体、库存与交付路径持续稳定运行。",
         kicker: "核心能力",
         title: "围绕多商户数字商品分发搭建的平台能力",
       },
       solutions: {
-        copy: "首页不再直接堆商品，而是把平台角色、支付路由和店铺分层一次讲清楚。",
+        copy: "围绕品牌官网、官方渠道、合作方站点与统一支付治理，建立清晰的对外服务入口与业务边界。",
         kicker: "解决方案",
-        title: "适合管理员直营与商户自营并存的业务模式",
+        title: "适用于平台自营与合作方协同运营的数字商品模式",
       },
       stores: {
-        copy: "首页负责企业介绍，店铺负责成交。这样管理员与商户都能拥有清晰的对外入口。",
-        kicker: "店铺网络",
-        title: "统一品牌首页，分层承接官方店与商户店",
+        copy: "首页负责品牌表达与方案说明，官方渠道和合作方站点分别承接成交与服务。",
+        kicker: "站点网络",
+        title: "统一品牌入口，分层承接平台官方渠道与合作方站点",
       },
     },
     solutionCards: [
       {
-        action: "查看官方店",
+        action: "进入官方渠道",
         description:
-          "平台直营商品统一沉淀到 `/store/platform`，首页只负责品牌展示，不再把商品列表和管理入口混在一起。",
-        eyebrow: "平台直营",
+          "面向平台自营商品、重点活动与品牌转化的统一成交入口，承接品牌流量并保持交易链路稳定。",
+        eyebrow: "平台官方渠道",
         href: buildPlatformStorefrontPath(),
-        metric: `${platformProductCount} 个直营商品`,
-        title: "管理员官方店",
+        metric: `${platformProductCount} 个在线商品`,
+        title: "平台官方渠道",
       },
       {
-        action: "发起入驻",
+        action: "申请接入",
         description:
-          "每个商户都有自己的 `/store/[merchantId]` 专属前台，商品、SKU、库存与订单都只归属自己的店铺。",
-        eyebrow: "商户前台",
+          "为合作方提供独立的商品展示、库存履约与订单归属空间，确保业务边界清晰且便于后续扩展。",
+        eyebrow: "合作方站点",
         href: "/merchant/register",
-        metric: `${merchantStoreCount} 个独立店`,
-        title: "商户独立店铺",
+        metric: `${merchantStoreCount} 个合作方站点`,
+        title: "合作方专属站点",
       },
       {
-        action: "进入商户中心",
+        action: "进入业务中心",
         description:
-          "支付不再写死到平台，而是由后台和商户中心各自维护自己的 NovaPay 参数，订单根据商品绑定的商户路由收款。",
-        eyebrow: "支付路由",
+          "平台与合作方可分别维护支付参数与默认通道，订单按归属主体自动路由收款并统一追踪状态。",
+        eyebrow: "统一支付治理",
         href: "/merchant",
-        metric: `${activeMerchantPaymentCount} 个商户已启用`,
-        title: "NovaPay 多商户路由",
+        metric: `${activeMerchantPaymentCount} 个主体已启用`,
+        title: "多主体支付治理",
       },
     ],
     storeBanner: {
-      chip: "管理员官方店",
-      copy: "平台直营商品、SKU、库存与订单都收敛到管理员官方店。需要企业展示时留在首页，需要成交时再跳到官方店或对应商户店。",
-      cta: "打开管理员官方店",
-      merchantCta: "商户入驻",
+      chip: "平台官方渠道",
+      copy: "平台自营商品、SKU、库存与订单统一收敛到官方渠道。首页负责品牌表达，进入渠道后再完成商品浏览、下单与履约。",
+      cta: "进入官方渠道",
+      merchantCta: "申请接入",
       stats: [
-        { label: "直营商品", value: platformProductCount },
-        { label: "多 SKU 商品", value: multiSkuProductCount },
-        { label: "已上线商户店", value: merchantStoreCount },
+        { label: "在线商品", value: platformProductCount },
+        { label: "多规格商品", value: multiSkuProductCount },
+        { label: "合作方站点", value: merchantStoreCount },
       ],
-      title: "管理员官方店已经独立为 `/store/platform`",
+      title: "平台官方渠道作为统一成交入口独立承载自营业务",
     },
     trustCards: [
       {
-        detail: "已具备独立前台与收款配置的商户店铺",
-        label: "独立店铺",
+        detail: "已具备独立站点与收款配置的合作方",
+        label: "合作方站点",
         value: merchantStoreCount,
       },
       {
-        detail: "管理员官方店当前可售规格数量",
-        label: "官方 SKU",
+        detail: "官方渠道当前可售规格数量",
+        label: "官方渠道规格",
         value: totalSkuCount,
       },
       {
-        detail: "官方店可即时履约的卡密库存",
-        label: "平台库存",
+        detail: "官方渠道可即时履约的库存规模",
+        label: "官方渠道库存",
         value: totalStock,
       },
       {
-        detail: "商户侧已上架商品总量",
-        label: "商户商品",
+        detail: "合作方侧已上线商品总量",
+        label: "合作方商品",
         value: totalMerchantProducts,
       },
     ],
     kpiCards: [
       {
-        detail: "当前已启用 NovaPay 的商户数",
-        label: "商户收款状态",
+        detail: "当前已启用 NovaPay 的业务主体数",
+        label: "收款主体状态",
         value: activeMerchantPaymentCount,
       },
       {
-        detail: "商户侧全部在售规格",
-        label: "商户 SKU 总量",
+        detail: "合作方侧全部在售规格",
+        label: "合作方规格总量",
         value: totalMerchantSkuCount,
       },
       {
-        detail: "多 SKU 商品占比 / 官方商品总量",
-        label: "官方商品模型",
+        detail: "多规格商品数量 / 官方渠道商品总量",
+        label: "官方渠道商品模型",
         value: `${multiSkuProductCount}/${platformProductCount}`,
       },
       {
-        detail: "支付结果同步后自动交付卡密",
+        detail: "支付结果同步后自动触发交付",
         label: "履约模式",
-        value: "自动发卡",
+        value: "自动履约",
       },
     ],
     ui: {
       browseFlow: "查看业务闭环",
       buyNow: "立即购买",
-      multiSkuMetaFallback: "支持多规格、多价格和多库存的商品模型。",
-      openMerchantHub: "进入商户中心",
-      openStorefront: "进入官方店",
-      productSummaryFallback: "管理员官方店正在销售的示例商品。",
-      registerMerchant: "商户入驻",
-      singleMetaFallback: "默认规格直购，适合轻量直营发卡。",
+      multiSkuMetaFallback: "支持多规格、多价格与多库存的商品模型。",
+      openMerchantHub: "进入业务中心",
+      openStorefront: "进入官方渠道",
+      productSummaryFallback: "官方渠道当前在售的示例商品。",
+      registerMerchant: "申请接入",
+      singleMetaFallback: "默认规格直购，适合标准化数字商品交付。",
       viewProduct: "查看商品",
     },
   };

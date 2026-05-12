@@ -31,8 +31,19 @@ const paymentProfileSelect = {
   updatedAt: true,
 } satisfies Prisma.PaymentProfileSelect;
 
+const paymentProfileChannelConfigSelect = {
+  id: true,
+  defaultChannelCode: true,
+  enabledChannelCodes: true,
+  isActive: true,
+} satisfies Prisma.PaymentProfileSelect;
+
 type PaymentProfileRow = Prisma.PaymentProfileGetPayload<{
   select: typeof paymentProfileSelect;
+}>;
+
+type PaymentProfileChannelConfigRow = Prisma.PaymentProfileGetPayload<{
+  select: typeof paymentProfileChannelConfigSelect;
 }>;
 
 export type PaymentProfileSnapshot = Omit<
@@ -64,6 +75,22 @@ function hydrateOptionalPaymentProfile(profile: PaymentProfileRow | null) {
 
 function hydratePaymentProfiles(profiles: PaymentProfileRow[]) {
   return profiles.map((profile) => hydratePaymentProfile(profile));
+}
+
+function buildCheckoutChannelConfiguration(
+  profile: PaymentProfileChannelConfigRow | null,
+) {
+  if (!profile || !profile.isActive) {
+    return null;
+  }
+
+  return {
+    defaultChannelCode: profile.defaultChannelCode,
+    enabledChannelCodes: normalizeEnabledChannelCodes(
+      profile.enabledChannelCodes,
+      profile.defaultChannelCode,
+    ),
+  };
 }
 
 function buildStoredPaymentProfileInput(input: {
@@ -717,17 +744,41 @@ export async function resolvePaymentProfileId(input?: string | null) {
 }
 
 export async function getCheckoutChannelConfiguration(paymentProfileId?: string | null) {
-  const profile = paymentProfileId
-    ? await getPaymentProfileById(paymentProfileId)
-    : await ensureDefaultPaymentProfile();
+  const id = normalizeOptionalId(paymentProfileId);
 
-  if (!profile || !profile.isActive) {
+  if (id) {
+    const profile = await prisma.paymentProfile.findUnique({
+      where: {
+        id,
+      },
+      select: paymentProfileChannelConfigSelect,
+    });
+
+    return buildCheckoutChannelConfiguration(profile);
+  }
+
+  const profile = await prisma.paymentProfile.findFirst({
+    where: {
+      isActive: true,
+      isDefault: true,
+    },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    select: paymentProfileChannelConfigSelect,
+  });
+
+  if (profile) {
+    return buildCheckoutChannelConfiguration(profile);
+  }
+
+  const envProfile = getEnvPaymentProfileInput();
+
+  if (!envProfile || !envProfile.isActive) {
     return null;
   }
 
   return {
-    defaultChannelCode: profile.defaultChannelCode,
-    enabledChannelCodes: profile.enabledChannelCodes,
+    defaultChannelCode: envProfile.defaultChannelCode,
+    enabledChannelCodes: envProfile.enabledChannelCodes,
   };
 }
 

@@ -33,12 +33,12 @@ export default async function QueryPage({
       <section className="panel notice-panel">
         <div className="panel-header">
           <span className="panel-icon">◎</span>
-          <h2 className="panel-title">订单查询</h2>
+          <h2 className="panel-title">订单服务查询</h2>
         </div>
 
         <div className="panel-body">
           <p className="section-copy">
-            用订单号和邮箱取回发货记录；如果支付完成后没有自动回跳，也可以在这里主动刷新。
+            通过订单号和邮箱查询订单状态与交付记录；如果支付完成后没有自动返回，也可以在这里主动刷新进度。
           </p>
         </div>
       </section>
@@ -47,7 +47,7 @@ export default async function QueryPage({
         <article className="panel">
           <div className="panel-header">
             <span className="panel-icon">◇</span>
-            <h2 className="panel-title">查询条件</h2>
+            <h2 className="panel-title">查询信息</h2>
           </div>
 
           <div className="panel-body">
@@ -63,7 +63,7 @@ export default async function QueryPage({
               </div>
 
               <button type="submit" className="button">
-                查询订单
+                查询状态
               </button>
             </form>
 
@@ -77,7 +77,7 @@ export default async function QueryPage({
         <aside className="panel">
           <div className="panel-header">
             <span className="panel-icon">◆</span>
-            <h2 className="panel-title">查询结果</h2>
+            <h2 className="panel-title">订单结果</h2>
           </div>
 
           <div className="panel-body">
@@ -95,7 +95,7 @@ export default async function QueryPage({
                     <dd>{order.product.name}</dd>
                   </div>
                   <div className="data-row">
-                    <dt className="data-key">SKU</dt>
+                    <dt className="data-key">规格</dt>
                     <dd>{order.sku.name}</dd>
                   </div>
                   <div className="data-row">
@@ -130,7 +130,7 @@ export default async function QueryPage({
               </>
             ) : (
               <div className="sub-panel">
-                <p className="empty-note">输入订单号和邮箱后，这里会展示订单状态与发货结果。</p>
+                <p className="empty-note">输入订单号和邮箱后，这里会展示订单状态、支付进度与交付结果。</p>
               </div>
             )}
           </div>

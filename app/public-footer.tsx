@@ -3,8 +3,8 @@
 import { useSitePreferences } from "@/app/ui-preferences";
 
 const footerCopy = {
-  zh: "NoveShop 负责商品、SKU、库存与履约中台，NovaPay 负责多商户支付链路与状态同步。",
-  en: "NoveShop powers the catalog, SKU, inventory, and fulfillment layer, while NovaPay handles multi-merchant payment routing and status sync.",
+  zh: "NoveShop 提供商品、库存与自动履约能力，NovaPay 负责多主体支付治理与状态同步。",
+  en: "NoveShop powers catalog, inventory, and automated fulfillment, while NovaPay handles multi-entity payment governance and status synchronization.",
 } as const;
 
 export function PublicFooter() {
