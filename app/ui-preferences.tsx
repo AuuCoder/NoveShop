@@ -65,6 +65,7 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.language = language;
     document.documentElement.lang = language === "zh" ? "zh-CN" : "en";
+    document.documentElement.classList.toggle("dark", theme === "dark");
 
     if (!mounted) {
       return;

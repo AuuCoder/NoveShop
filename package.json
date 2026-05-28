@@ -28,27 +28,38 @@
     "env:check:prod": "NODE_ENV=production node --import tsx scripts/check-production-env.ts"
   },
   "dependencies": {
-    "@prisma/adapter-mariadb": "7.7.0",
     "@prisma/adapter-better-sqlite3": "7.7.0",
+    "@prisma/adapter-mariadb": "7.7.0",
     "@prisma/adapter-pg": "7.7.0",
     "@prisma/client": "7.7.0",
     "better-sqlite3": "^12.4.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "^1.16.0",
     "next": "16.2.3",
+    "next-themes": "^0.4.6",
     "pg": "8.20.0",
     "prisma": "7.7.0",
+    "radix-ui": "^1.4.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "shadcn": "^4.8.2",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.3.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20.19.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "autoprefixer": "^10.5.0",
     "eslint": "^9.38.0",
     "eslint-config-next": "16.2.3",
+    "tailwindcss": "^4.3.0",
     "tsx": "^4.20.6",
     "typescript": "5.9.3"
   }

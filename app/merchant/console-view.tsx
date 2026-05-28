@@ -17,6 +17,10 @@ import {
   logoutMerchantAction,
   rollbackMerchantPaymentProfileRevisionAction,
   saveMerchantPaymentProfileAction,
+  toggleMerchantPaymentProfileEnabledAction,
+  toggleMerchantProductStatusAction,
+  toggleMerchantSkuEnabledAction,
+  toggleMerchantStorefrontAnnouncementEnabledAction,
   updateMerchantProfileAction,
   updateMerchantStorefrontAnnouncementAction,
   updateMerchantCardItemAction,
@@ -38,6 +42,7 @@ import { getEnv } from "@/lib/env";
 import { type MerchantAccountSnapshot } from "@/lib/merchant-account";
 import { formatPaymentChannelCodes } from "@/lib/payment-channels";
 import { type PaymentProfileRevisionSummary, type PaymentProfileSnapshot } from "@/lib/payment-profile";
+import { describeSkuPricingTier, parseStoredSkuPricingTiers } from "@/lib/sku-pricing";
 import {
   describeOrderAmount,
   getMerchantDashboardData,
@@ -105,6 +110,32 @@ function getProductSaleModeCopy(mode: ProductSaleMode) {
 
 function getSingleModePrimarySku(product: MerchantProduct) {
   return product.skus.find((sku) => sku.enabled) ?? product.skus[0] ?? null;
+}
+
+function getSelectedMerchantSku(product: MerchantProduct, selectedSkuId?: string | null) {
+  if (selectedSkuId) {
+    const matchedSku = product.skus.find((sku) => sku.id === selectedSkuId);
+
+    if (matchedSku) {
+      return matchedSku;
+    }
+  }
+
+  return product.skus.find((sku) => sku.enabled) ?? product.skus[0] ?? null;
+}
+
+function getSkuPricingSummary(pricingTiers: string | null | undefined) {
+  const tiers = parseStoredSkuPricingTiers(pricingTiers);
+
+  return tiers.length > 0 ? tiers.map(describeSkuPricingTier).join(" / ") : "固定售价";
+}
+
+function buildMerchantProductConfigPath(productId: string) {
+  return `/merchant/products/${encodeURIComponent(productId)}`;
+}
+
+function buildMerchantProductSkuConfigPath(productId: string, skuId: string) {
+  return `${buildMerchantProductConfigPath(productId)}?skuId=${encodeURIComponent(skuId)}`;
 }
 
 function getInventoryTone(available: number, enabled: boolean) {
@@ -217,6 +248,41 @@ function MerchantTabInput({ tab, returnTo }: { tab: MerchantTab; returnTo?: stri
       <input type="hidden" name="tab" value={tab} />
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
     </>
+  );
+}
+
+type MerchantQuickAction = (formData: FormData) => void | Promise<void>;
+
+function MerchantQuickToggleForm({
+  action,
+  tab,
+  returnTo,
+  fields,
+  active,
+  activeLabel,
+  inactiveLabel,
+}: {
+  action: MerchantQuickAction;
+  tab: MerchantTab;
+  returnTo?: string;
+  fields: Record<string, string>;
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+}) {
+  return (
+    <form action={action} className="admin-quick-toggle-form">
+      <MerchantTabInput tab={tab} returnTo={returnTo} />
+      {Object.entries(fields).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
+      <button
+        type="submit"
+        className={`button-secondary admin-status-toggle-button ${active ? "is-active" : "is-inactive"}`}
+      >
+        {active ? activeLabel : inactiveLabel}
+      </button>
+    </form>
   );
 }
 
@@ -903,6 +969,555 @@ function OverviewSection({
   );
 }
 
+function MerchantProductSummaryCard({
+  merchant,
+  paymentProfile,
+  product,
+  returnTo,
+}: {
+  merchant: MerchantAccountSnapshot;
+  paymentProfile: PaymentProfileSnapshot | null;
+  product: MerchantProduct;
+  returnTo?: string;
+}) {
+  return (
+    <article className="admin-product-item">
+      <div className="admin-product-head">
+        <div>
+          <h3>{product.name}</h3>
+          <p className="small-copy">
+            {buildMerchantStorefrontProductPath(merchant.id, product.slug)} · 最近更新 {formatDateTime(product.updatedAt)}
+          </p>
+          <p className="small-copy">{getProductSaleModeCopy(product.saleMode)}</p>
+          <p className="small-copy">
+            当前商户：{paymentProfile ? `${paymentProfile.name} / ${paymentProfile.merchantCode}` : "未配置"}
+          </p>
+          {product.summary ? <p className="small-copy">简介：{product.summary}</p> : null}
+        </div>
+
+        <div className="admin-product-actions">
+          <span className="badge muted">{getProductSaleModeLabel(product.saleMode)}</span>
+          <span className={`badge ${getProductStatusTone(product.status)}`}>{getProductStatusLabel(product.status)}</span>
+          <Link href={buildMerchantStorefrontProductPath(merchant.id, product.slug)} className="button-link">
+            查看商品
+          </Link>
+        </div>
+      </div>
+
+      <div className="admin-stock-strip">
+        <div>
+          <span>SKU 数量</span>
+          <strong>{product.skus.length}</strong>
+        </div>
+        <div>
+          <span>可售</span>
+          <strong>{product.stock.available}</strong>
+        </div>
+        <div>
+          <span>已售</span>
+          <strong>{product.stock.sold}</strong>
+        </div>
+      </div>
+
+      <div className="button-row compact">
+        <MerchantQuickToggleForm
+          action={toggleMerchantProductStatusAction}
+          tab="products"
+          returnTo={returnTo}
+          fields={{ productId: product.id }}
+          active={product.status === ProductStatus.ACTIVE}
+          activeLabel="下架商品"
+          inactiveLabel="上架商品"
+        />
+      </div>
+
+      <div className="button-row">
+        <Link href={buildMerchantProductConfigPath(product.id)} className="button-secondary">
+          配置商品
+        </Link>
+        <Link href={buildMerchantStorefrontProductPath(merchant.id, product.slug)} className="button-link">
+          打开前台页
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+function MerchantProductConfigurationArticle({
+  merchant,
+  paymentProfile,
+  product,
+  returnTo,
+  selectedSkuId,
+}: {
+  merchant: MerchantAccountSnapshot;
+  paymentProfile: PaymentProfileSnapshot | null;
+  product: MerchantProduct;
+  returnTo?: string;
+  selectedSkuId?: string;
+}) {
+  const singleModeSku = getSingleModePrimarySku(product);
+  const selectedSku = getSelectedMerchantSku(product, selectedSkuId);
+  const storefrontPath = buildMerchantStorefrontProductPath(merchant.id, product.slug);
+  const paymentProfileLabel = paymentProfile ? `${paymentProfile.name} / ${paymentProfile.merchantCode}` : "未配置";
+
+  return (
+    <article className="admin-product-item">
+      <div className="admin-product-head">
+        <div>
+          <h3>{product.name}</h3>
+          <p className="small-copy">
+            {storefrontPath} · 最近更新 {formatDateTime(product.updatedAt)}
+          </p>
+          <p className="small-copy">{getProductSaleModeCopy(product.saleMode)}</p>
+          <p className="small-copy">当前商户：{paymentProfileLabel}</p>
+        </div>
+
+        <div className="admin-product-actions">
+          <span className="badge muted">{getProductSaleModeLabel(product.saleMode)}</span>
+          <span className={`badge ${getProductStatusTone(product.status)}`}>{getProductStatusLabel(product.status)}</span>
+          <Link href={storefrontPath} className="button-link">
+            查看商品
+          </Link>
+        </div>
+      </div>
+
+      <div className="admin-stock-strip">
+        <div>
+          <span>SKU 数量</span>
+          <strong>{product.skus.length}</strong>
+        </div>
+        <div>
+          <span>可售</span>
+          <strong>{product.stock.available}</strong>
+        </div>
+        <div>
+          <span>已售</span>
+          <strong>{product.stock.sold}</strong>
+        </div>
+      </div>
+
+      <div className="admin-subsection">
+        <div className="admin-subsection-head">
+          <h3>商品总览</h3>
+          <p className="small-copy">先把商品信息和规格矩阵看清楚，再下方逐项编辑会更顺手。</p>
+        </div>
+
+        <div className="table-wrap admin-table-wrap">
+          <table className="admin-detail-table">
+            <tbody>
+              <tr>
+                <th>商品名称</th>
+                <td>{product.name}</td>
+              </tr>
+              <tr>
+                <th>商品别名</th>
+                <td>{product.slug}</td>
+              </tr>
+              <tr>
+                <th>前台地址</th>
+                <td>
+                  <Link href={storefrontPath} className="admin-summary-link">
+                    {storefrontPath}
+                  </Link>
+                </td>
+              </tr>
+              <tr>
+                <th>商品状态</th>
+                <td>
+                  <span className={`badge ${getProductStatusTone(product.status)}`}>{getProductStatusLabel(product.status)}</span>
+                </td>
+              </tr>
+              <tr>
+                <th>商品模式</th>
+                <td>{getProductSaleModeLabel(product.saleMode)}</td>
+              </tr>
+              <tr>
+                <th>绑定商户</th>
+                <td>{paymentProfileLabel}</td>
+              </tr>
+              <tr>
+                <th>SKU 数量</th>
+                <td>{product.skus.length}</td>
+              </tr>
+              <tr>
+                <th>最低售价</th>
+                <td>{describeOrderAmount(product.startingPriceCents)}</td>
+              </tr>
+              <tr>
+                <th>库存汇总</th>
+                <td>
+                  可售 {product.stock.available} / 占用 {product.stock.reserved} / 已售 {product.stock.sold}
+                </td>
+              </tr>
+              <tr>
+                <th>最近更新</th>
+                <td>{formatDateTime(product.updatedAt)}</td>
+              </tr>
+              <tr>
+                <th>一句话说明</th>
+                <td>{product.summary?.trim() ? product.summary : "未填写"}</td>
+              </tr>
+              <tr>
+                <th>详情说明</th>
+                <td>{product.description?.trim() ? product.description : "未填写"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="admin-subsection">
+        <div className="admin-subsection-head">
+          <h3>SKU 列表</h3>
+          <p className="small-copy">规格先用表格看全，再从下方下拉切换某一条进行编辑。</p>
+        </div>
+
+        {product.skus.length === 0 ? (
+          <div className="admin-empty-state">
+            <strong>当前没有 SKU</strong>
+            <p>这个商品还没有规格，请先在下方添加一个 SKU。</p>
+          </div>
+        ) : (
+          <div className="table-wrap admin-table-wrap">
+            <table className="admin-sku-summary-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>状态</th>
+                  <th>售价</th>
+                  <th>阶梯价</th>
+                  <th>库存</th>
+                  <th>说明</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {product.skus.map((sku) => (
+                  <tr key={sku.id} className={selectedSku?.id === sku.id ? "is-current" : undefined}>
+                    <td className="admin-sku-summary-cell">
+                      <strong>{sku.name}</strong>
+                      <p className="small-copy">{sku.id}</p>
+                    </td>
+                    <td>
+                      <span className={`badge ${sku.enabled ? "success" : "muted"}`}>
+                        {sku.enabled ? "启用中" : "已停用"}
+                      </span>
+                    </td>
+                    <td>{describeOrderAmount(sku.priceCents)}</td>
+                    <td>{getSkuPricingSummary(sku.pricingTiers)}</td>
+                    <td>
+                      可售 {sku.stock.available}
+                      <br />
+                      占用 {sku.stock.reserved} / 已售 {sku.stock.sold}
+                    </td>
+                    <td>{sku.summary?.trim() ? sku.summary : "暂无说明"}</td>
+                    <td className="admin-sku-summary-action">
+                      {selectedSku?.id === sku.id ? <span className="badge warning">当前编辑</span> : null}
+                      <MerchantQuickToggleForm
+                        action={toggleMerchantSkuEnabledAction}
+                        tab="products"
+                        returnTo={returnTo}
+                        fields={{ skuId: sku.id }}
+                        active={sku.enabled}
+                        activeLabel="停用 SKU"
+                        inactiveLabel="启用 SKU"
+                      />
+                      <Link href={buildMerchantProductSkuConfigPath(product.id, sku.id)} className="button-link">
+                        编辑 SKU
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="admin-subsection">
+        <div className="admin-subsection-head">
+          <h3>编辑商品基础信息</h3>
+          <p className="small-copy">把常改字段集中在这里，状态和模式都改成下拉，不再铺满整页。</p>
+        </div>
+
+        <form action={updateMerchantProductAction} className="inline-form">
+          <MerchantTabInput tab="products" returnTo={returnTo} />
+          <input type="hidden" name="productId" value={product.id} />
+          <input type="hidden" name="productSlug" value={product.slug} />
+
+          <div className="field">
+            <label>商品名</label>
+            <input name="name" defaultValue={product.name} required />
+          </div>
+
+          <div className="field">
+            <label>商品别名</label>
+            <input name="slug" defaultValue={product.slug} required />
+          </div>
+
+          <div className="field">
+            <label>一句话说明</label>
+            <input name="summary" defaultValue={product.summary ?? ""} />
+          </div>
+
+          <div className="field">
+            <label>详情</label>
+            <textarea name="description" defaultValue={product.description ?? ""} />
+          </div>
+
+          <div className="field">
+            <label>状态</label>
+            <select name="status" defaultValue={product.status}>
+              <option value={ProductStatus.DRAFT}>草稿</option>
+              <option value={ProductStatus.ACTIVE}>上架</option>
+              <option value={ProductStatus.ARCHIVED}>归档</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label>商品模式</label>
+            <select name="saleMode" defaultValue={product.saleMode}>
+              <option value={ProductSaleMode.SINGLE}>单商品</option>
+              <option value={ProductSaleMode.MULTI}>多 SKU</option>
+            </select>
+          </div>
+
+          <div className="button-row">
+            <button type="submit" className="button-secondary">
+              更新商品
+            </button>
+
+            <button formAction={deleteMerchantProductAction} formNoValidate type="submit" className="button-link">
+              删除商品
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="admin-subsection">
+        <div className="admin-subsection-head">
+          <h3>{product.saleMode === ProductSaleMode.MULTI ? "SKU 编辑" : "单商品配置"}</h3>
+          <p className="small-copy">
+            {product.saleMode === ProductSaleMode.MULTI
+              ? `商品最低价：${describeOrderAmount(product.startingPriceCents)}`
+              : "单商品模式下，前台只展示当前启用的默认规格。"}
+          </p>
+        </div>
+
+        {product.saleMode === ProductSaleMode.MULTI ? (
+          <>
+            <form action={buildMerchantProductConfigPath(product.id)} className="admin-sku-selector-form">
+              <div className="field">
+                <label htmlFor={`merchant-sku-select-${product.id}`}>选择要配置的 SKU</label>
+                <select
+                  id={`merchant-sku-select-${product.id}`}
+                  name="skuId"
+                  defaultValue={selectedSku?.id ?? product.skus[0]?.id ?? ""}
+                >
+                  {product.skus.map((sku) => (
+                    <option key={sku.id} value={sku.id}>
+                      {sku.name} · 可售 {sku.stock.available} · {sku.enabled ? "启用中" : "已停用"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button type="submit" className="button-secondary">
+                切换 SKU
+              </button>
+            </form>
+
+            {selectedSku ? (
+              <form action={updateMerchantSkuAction} className="admin-sku-card">
+                <MerchantTabInput tab="products" returnTo={returnTo} />
+                <input type="hidden" name="skuId" value={selectedSku.id} />
+                <input type="hidden" name="productSlug" value={product.slug} />
+
+                <div className="admin-sku-head">
+                  <div>
+                    <strong>{selectedSku.name}</strong>
+                    <p className="small-copy">
+                      可售 {selectedSku.stock.available} / 占用 {selectedSku.stock.reserved} / 已售 {selectedSku.stock.sold}
+                    </p>
+                  </div>
+                  <span className={`badge ${selectedSku.enabled ? "success" : "muted"}`}>
+                    {selectedSku.enabled ? "启用中" : "已停用"}
+                  </span>
+                </div>
+
+                <div className="inline-grid">
+                  <div className="field">
+                    <label>SKU 名称</label>
+                    <input name="name" defaultValue={selectedSku.name} required />
+                  </div>
+                  <div className="field">
+                    <label>SKU 售价</label>
+                    <input name="price" defaultValue={(selectedSku.priceCents / 100).toFixed(2)} required />
+                  </div>
+                </div>
+
+                <div className="field">
+                  <label>SKU 说明</label>
+                  <input name="summary" defaultValue={selectedSku.summary ?? ""} />
+                </div>
+
+                <div className="field">
+                  <label>阶梯价规则</label>
+                  <SkuPricingTierEditor name="pricingTiers" initialValue={selectedSku.pricingTiers} />
+                </div>
+
+                <label className="admin-check-row">
+                  <input type="checkbox" name="enabled" defaultChecked={selectedSku.enabled} />
+                  <span>启用该 SKU</span>
+                </label>
+
+                <div className="button-row">
+                  <MerchantQuickToggleForm
+                    action={toggleMerchantSkuEnabledAction}
+                    tab="products"
+                    returnTo={returnTo}
+                    fields={{ skuId: selectedSku.id }}
+                    active={selectedSku.enabled}
+                    activeLabel="停用 SKU"
+                    inactiveLabel="启用 SKU"
+                  />
+                  <button type="submit" className="button-secondary">
+                    更新 SKU
+                  </button>
+
+                  <button formAction={deleteMerchantSkuAction} formNoValidate type="submit" className="button-link">
+                    删除 SKU
+                  </button>
+                </div>
+              </form>
+            ) : null}
+
+            <form action={createMerchantSkuAction} className="admin-sku-create">
+              <MerchantTabInput tab="products" returnTo={returnTo} />
+              <input type="hidden" name="productId" value={product.id} />
+              <input type="hidden" name="productSlug" value={product.slug} />
+
+              <div className="admin-subsection-head">
+                <h3>新增 SKU</h3>
+                <p className="small-copy">继续往这个商品下挂更多规格</p>
+              </div>
+
+              <div className="inline-grid">
+                <div className="field">
+                  <label>SKU 名称</label>
+                  <input name="name" placeholder="例如 年卡" required />
+                </div>
+                <div className="field">
+                  <label>SKU 售价</label>
+                  <input name="price" placeholder="99.00" required />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>SKU 说明</label>
+                <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
+              </div>
+
+              <div className="field">
+                <label>阶梯价规则</label>
+                <SkuPricingTierEditor name="pricingTiers" />
+              </div>
+
+              <label className="admin-check-row">
+                <input type="checkbox" name="enabled" defaultChecked />
+                <span>创建后立即启用</span>
+              </label>
+
+              <button type="submit" className="button">
+                添加 SKU
+              </button>
+            </form>
+          </>
+        ) : singleModeSku ? (
+          <>
+            <form action={updateMerchantSkuAction} className="admin-sku-card">
+              <MerchantTabInput tab="products" returnTo={returnTo} />
+              <input type="hidden" name="skuId" value={singleModeSku.id} />
+              <input type="hidden" name="productSlug" value={product.slug} />
+
+              <div className="admin-sku-head">
+                <div>
+                  <strong>{singleModeSku.name}</strong>
+                  <p className="small-copy">
+                    可售 {singleModeSku.stock.available} / 占用 {singleModeSku.stock.reserved} / 已售 {singleModeSku.stock.sold}
+                  </p>
+                </div>
+                <span className={`badge ${singleModeSku.enabled ? "success" : "muted"}`}>
+                  {singleModeSku.enabled ? "启用中" : "已停用"}
+                </span>
+              </div>
+
+              <div className="inline-grid">
+                <div className="field">
+                  <label>默认规格名称</label>
+                  <input name="name" defaultValue={singleModeSku.name} required />
+                </div>
+                <div className="field">
+                  <label>商品售价</label>
+                  <input name="price" defaultValue={(singleModeSku.priceCents / 100).toFixed(2)} required />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>商品说明</label>
+                <input name="summary" defaultValue={singleModeSku.summary ?? ""} />
+              </div>
+
+              <div className="field">
+                <label>阶梯价规则</label>
+                <SkuPricingTierEditor name="pricingTiers" initialValue={singleModeSku.pricingTiers} />
+              </div>
+
+              <label className="admin-check-row">
+                <input type="checkbox" name="enabled" defaultChecked={singleModeSku.enabled} />
+                <span>启用默认规格</span>
+              </label>
+
+              <div className="button-row">
+                <MerchantQuickToggleForm
+                  action={toggleMerchantSkuEnabledAction}
+                  tab="products"
+                  returnTo={returnTo}
+                  fields={{ skuId: singleModeSku.id }}
+                  active={singleModeSku.enabled}
+                  activeLabel="停用默认规格"
+                  inactiveLabel="启用默认规格"
+                />
+                <button type="submit" className="button-secondary">
+                  更新单商品配置
+                </button>
+
+                {product.skus.length > 1 ? (
+                  <button formAction={deleteMerchantSkuAction} formNoValidate type="submit" className="button-link">
+                    删除当前默认规格
+                  </button>
+                ) : null}
+              </div>
+            </form>
+
+            {product.skus.length > 1 ? (
+              <p className="small-copy">
+                当前商品还保留 {product.skus.length - 1} 个额外 SKU；切回多 SKU 模式后会重新出现在前台和后台列表中。
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <div className="admin-empty-state">
+            <strong>缺少默认规格</strong>
+            <p>这个单商品当前没有可管理的默认规格，请先切换为多 SKU 模式补充规格。</p>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function ProductsSection({
   merchant,
   paymentProfile,
@@ -911,6 +1526,8 @@ function ProductsSection({
   cards,
   visibleSectionIds,
   returnTo,
+  selectedProductId,
+  selectedSkuId,
 }: {
   merchant: MerchantAccountSnapshot;
   paymentProfile: PaymentProfileSnapshot | null;
@@ -919,142 +1536,148 @@ function ProductsSection({
   cards: ReadonlyArray<DashboardCard>;
   visibleSectionIds?: readonly string[];
   returnTo?: string;
+  selectedProductId?: string;
+  selectedSkuId?: string;
 }) {
   const storefrontPath = buildMerchantStorefrontPath(merchant.id);
-  const showCreate = shouldShowSection(visibleSectionIds, "products-create");
-  const showSignals = shouldShowSection(visibleSectionIds, "products-signals");
-  const showCatalog = shouldShowSection(visibleSectionIds, "products-catalog");
+  const isDedicatedPage = Boolean(selectedProductId);
+  const selectedProduct = selectedProductId
+    ? dashboard.products.find((product) => product.id === selectedProductId) ?? null
+    : null;
+  const showCreate = !isDedicatedPage && shouldShowSection(visibleSectionIds, "products-create");
+  const showSignals = !isDedicatedPage && shouldShowSection(visibleSectionIds, "products-signals");
+  const showCatalog = isDedicatedPage || shouldShowSection(visibleSectionIds, "products-catalog");
 
   return (
     <>
       <MetricGrid cards={cards} />
 
-      <section className="admin-content-grid">
+      <section className={isDedicatedPage ? "admin-content-grid admin-content-grid-single" : "admin-content-grid"}>
         <div className="admin-column-stack">
           {showCreate ? (
             <article id="products-create" className="admin-anchor-target admin-surface">
-            <div className="admin-section-head">
-              <div>
-                <p className="admin-section-kicker">Create</p>
-                <h2 className="order-title">创建商品</h2>
+              <div className="admin-section-head">
+                <div>
+                  <p className="admin-section-kicker">Create</p>
+                  <h2 className="order-title">创建商品</h2>
+                </div>
+                <span className="badge muted">默认绑定到我的商户</span>
               </div>
-              <span className="badge muted">默认绑定到我的商户</span>
-            </div>
 
-            {!paymentProfile ? (
-              <div className="admin-empty-state">
-                <strong>先配置 NovaPay 参数</strong>
-                <p>先到收款模块把你的商户号和密钥保存好，系统才能把你创建的商品绑定到自己的收款商户。</p>
-                <Link href={buildMerchantHref("payments")} className="button-secondary">
-                  去配置收款
-                </Link>
-              </div>
-            ) : (
-              <form action={createMerchantProductAction} className="inline-form">
-                <MerchantTabInput tab="products" returnTo={returnTo} />
-
-                <div className="field">
-                  <label htmlFor="name">商品名</label>
-                  <input id="name" name="name" placeholder="例如 夸克会员" required />
+              {!paymentProfile ? (
+                <div className="admin-empty-state">
+                  <strong>先配置 NovaPay 参数</strong>
+                  <p>先到收款模块把你的商户号和密钥保存好，系统才能把你创建的商品绑定到自己的收款商户。</p>
+                  <Link href={buildMerchantHref("payments")} className="button-secondary">
+                    去配置收款
+                  </Link>
                 </div>
+              ) : (
+                <form action={createMerchantProductAction} className="inline-form">
+                  <MerchantTabInput tab="products" returnTo={returnTo} />
 
-                <div className="inline-grid">
                   <div className="field">
-                    <label htmlFor="slug">别名</label>
-                    <input id="slug" name="slug" placeholder="留空则自动生成" />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="saleMode">商品模式</label>
-                    <select id="saleMode" name="saleMode" defaultValue={ProductSaleMode.SINGLE}>
-                      <option value={ProductSaleMode.SINGLE}>单商品</option>
-                      <option value={ProductSaleMode.MULTI}>多 SKU</option>
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="status">状态</label>
-                    <select id="status" name="status" defaultValue={ProductStatus.DRAFT}>
-                      <option value={ProductStatus.DRAFT}>草稿</option>
-                      <option value={ProductStatus.ACTIVE}>上架</option>
-                      <option value={ProductStatus.ARCHIVED}>归档</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="field">
-                  <label htmlFor="summary">一句话说明</label>
-                  <input id="summary" name="summary" placeholder="例如 秒发 / 自动售后 / 多面值" />
-                </div>
-
-                <div className="field">
-                  <label htmlFor="description">详情</label>
-                  <textarea id="description" name="description" placeholder="补充商品说明、发货规则、售后须知" />
-                </div>
-
-                <div className="admin-subsection">
-                  <div className="admin-subsection-head">
-                    <h3>默认规格</h3>
-                    <p className="small-copy">单商品模式使用默认规格，多 SKU 模式从这里开始扩展</p>
+                    <label htmlFor="name">商品名</label>
+                    <input id="name" name="name" placeholder="例如 夸克会员" required />
                   </div>
 
                   <div className="inline-grid">
                     <div className="field">
-                      <label htmlFor="initialSkuName">SKU 名称</label>
-                      <input id="initialSkuName" name="initialSkuName" placeholder="例如 月卡" />
+                      <label htmlFor="slug">别名</label>
+                      <input id="slug" name="slug" placeholder="留空则自动生成" />
                     </div>
                     <div className="field">
-                      <label htmlFor="initialSkuPrice">SKU 售价</label>
-                      <input id="initialSkuPrice" name="initialSkuPrice" placeholder="29.90" required />
+                      <label htmlFor="saleMode">商品模式</label>
+                      <select id="saleMode" name="saleMode" defaultValue={ProductSaleMode.SINGLE}>
+                        <option value={ProductSaleMode.SINGLE}>单商品</option>
+                        <option value={ProductSaleMode.MULTI}>多 SKU</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="status">状态</label>
+                      <select id="status" name="status" defaultValue={ProductStatus.DRAFT}>
+                        <option value={ProductStatus.DRAFT}>草稿</option>
+                        <option value={ProductStatus.ACTIVE}>上架</option>
+                        <option value={ProductStatus.ARCHIVED}>归档</option>
+                      </select>
                     </div>
                   </div>
 
                   <div className="field">
-                    <label htmlFor="initialSkuSummary">SKU 说明</label>
-                    <input id="initialSkuSummary" name="initialSkuSummary" placeholder="例如 官方直充 / 自动秒发" />
+                    <label htmlFor="summary">一句话说明</label>
+                    <input id="summary" name="summary" placeholder="例如 秒发 / 自动售后 / 多面值" />
                   </div>
 
                   <div className="field">
-                    <label>阶梯价规则</label>
-                    <SkuPricingTierEditor name="initialSkuPricingTiers" />
+                    <label htmlFor="description">详情</label>
+                    <textarea id="description" name="description" placeholder="补充商品说明、发货规则、售后须知" />
                   </div>
-                </div>
 
-                <button type="submit" className="button">
-                  保存商品
-                </button>
-              </form>
-            )}
+                  <div className="admin-subsection">
+                    <div className="admin-subsection-head">
+                      <h3>默认规格</h3>
+                      <p className="small-copy">单商品模式使用默认规格，多 SKU 模式从这里开始扩展</p>
+                    </div>
+
+                    <div className="inline-grid">
+                      <div className="field">
+                        <label htmlFor="initialSkuName">SKU 名称</label>
+                        <input id="initialSkuName" name="initialSkuName" placeholder="例如 月卡" />
+                      </div>
+                      <div className="field">
+                        <label htmlFor="initialSkuPrice">SKU 售价</label>
+                        <input id="initialSkuPrice" name="initialSkuPrice" placeholder="29.90" required />
+                      </div>
+                    </div>
+
+                    <div className="field">
+                      <label htmlFor="initialSkuSummary">SKU 说明</label>
+                      <input id="initialSkuSummary" name="initialSkuSummary" placeholder="例如 官方直充 / 自动秒发" />
+                    </div>
+
+                    <div className="field">
+                      <label>阶梯价规则</label>
+                      <SkuPricingTierEditor name="initialSkuPricingTiers" />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="button">
+                    保存商品
+                  </button>
+                </form>
+              )}
             </article>
           ) : null}
 
           {showSignals ? (
             <article id="products-signals" className="admin-anchor-target admin-surface">
-            <div className="admin-section-head">
-              <div>
-                <p className="admin-section-kicker">Signals</p>
-                <h2 className="order-title">商品经营提醒</h2>
+              <div className="admin-section-head">
+                <div>
+                  <p className="admin-section-kicker">Signals</p>
+                  <h2 className="order-title">商品经营提醒</h2>
+                </div>
+                <Link href={buildMerchantHref("inventory")} className="button-link">
+                  去库存中心
+                </Link>
               </div>
-              <Link href={buildMerchantHref("inventory")} className="button-link">
-                去库存中心
-              </Link>
-            </div>
 
-            {insights.lowStockRows.length === 0 ? (
-              <div className="admin-empty-state">
-                <strong>暂无商品告警</strong>
-                <p>你的启用 SKU 还没有出现明显的库存风险，可以先专注于商品定价和规格设计。</p>
-              </div>
-            ) : (
-              <div className="admin-step-list">
-                {insights.lowStockRows.slice(0, 4).map((row, index) => (
-                  <div key={row.skuId} className="admin-step-item">
-                    <span>{index + 1}</span>
-                    <p>
-                      {row.productName} / {row.skuName} 只剩 {row.available} 条库存，若继续上量建议尽快补充供给。
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+              {insights.lowStockRows.length === 0 ? (
+                <div className="admin-empty-state">
+                  <strong>暂无商品告警</strong>
+                  <p>你的启用 SKU 还没有出现明显的库存风险，可以先专注于商品定价和规格设计。</p>
+                </div>
+              ) : (
+                <div className="admin-step-list">
+                  {insights.lowStockRows.slice(0, 4).map((row, index) => (
+                    <div key={row.skuId} className="admin-step-item">
+                      <span>{index + 1}</span>
+                      <p>
+                        {row.productName} / {row.skuName} 只剩 {row.available} 条库存，若继续上量建议尽快补充供给。
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </article>
           ) : null}
         </div>
@@ -1062,333 +1685,110 @@ function ProductsSection({
         <div className="admin-column-stack">
           {showCatalog ? (
             <article id="products-catalog" className="admin-anchor-target admin-surface">
-            <div className="admin-section-head">
-              <div>
-                <p className="admin-section-kicker">Catalog</p>
-                <h2 className="order-title">我的商品矩阵</h2>
+              <div className="admin-section-head">
+                <div>
+                  <p className="admin-section-kicker">{isDedicatedPage ? "Product Config" : "Catalog"}</p>
+                  <h2 className="order-title">{isDedicatedPage ? "商品配置详情" : "我的商品矩阵"}</h2>
+                </div>
+                {isDedicatedPage ? (
+                  <Link href={buildMerchantHref("products")} className="button-link">
+                    返回商品列表
+                  </Link>
+                ) : (
+                  <Link href={storefrontPath} className="button-link">
+                    打开我的店铺
+                  </Link>
+                )}
               </div>
-              <Link href={storefrontPath} className="button-link">
-                打开我的店铺
-              </Link>
-            </div>
 
-            {dashboard.products.length === 0 ? (
-              <div className="admin-empty-state">
-                <strong>还没有你自己的商品</strong>
-                <p>
-                  {paymentProfile
-                    ? "现在已经可以由你自己创建商品了。先建一个商品，后面就能继续配 SKU。"
-                    : "先保存 NovaPay 参数，再创建属于你自己的商品。"}
-                </p>
-              </div>
-            ) : (
-              <div className="admin-product-list">
-                {dashboard.products.map((product) => {
-                  const singleModeSku = getSingleModePrimarySku(product);
-
-                  return (
-                    <article key={product.id} className="admin-product-item">
-                      <div className="admin-product-head">
-                        <div>
-                          <h3>{product.name}</h3>
-                          <p className="small-copy">
-                            {buildMerchantStorefrontProductPath(merchant.id, product.slug)} · 最近更新{" "}
-                            {formatDateTime(product.updatedAt)}
-                          </p>
-                          <p className="small-copy">{getProductSaleModeCopy(product.saleMode)}</p>
-                          <p className="small-copy">
-                            当前商户：{paymentProfile ? `${paymentProfile.name} / ${paymentProfile.merchantCode}` : "未配置"}
-                          </p>
-                        </div>
-
-                        <div className="admin-product-actions">
-                          <span className="badge muted">{getProductSaleModeLabel(product.saleMode)}</span>
-                          <span className={`badge ${getProductStatusTone(product.status)}`}>
-                            {getProductStatusLabel(product.status)}
-                          </span>
-                          <Link
-                            href={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
-                            className="button-link"
-                          >
-                            查看商品
-                          </Link>
-                        </div>
-                      </div>
-
-                      <div className="admin-stock-strip">
-                        <div>
-                          <span>SKU 数量</span>
-                          <strong>{product.skus.length}</strong>
-                        </div>
-                        <div>
-                          <span>可售</span>
-                          <strong>{product.stock.available}</strong>
-                        </div>
-                        <div>
-                          <span>已售</span>
-                          <strong>{product.stock.sold}</strong>
-                        </div>
-                      </div>
-
-                      <form action={updateMerchantProductAction} className="inline-form">
-                        <MerchantTabInput tab="products" returnTo={returnTo} />
-                        <input type="hidden" name="productId" value={product.id} />
-                        <input type="hidden" name="productSlug" value={product.slug} />
-
-                        <div className="field">
-                          <label>商品名</label>
-                          <input name="name" defaultValue={product.name} required />
-                        </div>
-
-                        <div className="field">
-                          <label>商品别名</label>
-                          <input name="slug" defaultValue={product.slug} required />
-                        </div>
-
-                        <div className="field">
-                          <label>一句话说明</label>
-                          <input name="summary" defaultValue={product.summary ?? ""} />
-                        </div>
-
-                        <div className="field">
-                          <label>详情</label>
-                          <textarea name="description" defaultValue={product.description ?? ""} />
-                        </div>
-
-                        <div className="field">
-                          <label>状态</label>
-                          <select name="status" defaultValue={product.status}>
-                            <option value={ProductStatus.DRAFT}>草稿</option>
-                            <option value={ProductStatus.ACTIVE}>上架</option>
-                            <option value={ProductStatus.ARCHIVED}>归档</option>
-                          </select>
-                        </div>
-
-                        <div className="field">
-                          <label>商品模式</label>
-                          <select name="saleMode" defaultValue={product.saleMode}>
-                            <option value={ProductSaleMode.SINGLE}>单商品</option>
-                            <option value={ProductSaleMode.MULTI}>多 SKU</option>
-                          </select>
-                        </div>
-
-                        <div className="button-row">
-                          <button type="submit" className="button-secondary">
-                            更新商品
-                          </button>
-
-                          <button
-                            formAction={deleteMerchantProductAction}
-                            formNoValidate
-                            type="submit"
-                            className="button-link"
-                          >
-                            删除商品
-                          </button>
-                        </div>
-                      </form>
-
-                      <div className="admin-subsection">
-                        <div className="admin-subsection-head">
-                          <h3>{product.saleMode === ProductSaleMode.MULTI ? "SKU 配置" : "单商品配置"}</h3>
-                          <p className="small-copy">
-                            {product.saleMode === ProductSaleMode.MULTI
-                              ? `商品最低价：${describeOrderAmount(product.startingPriceCents)}`
-                              : "单商品模式下，前台只展示当前启用的默认规格。"}
-                          </p>
-                        </div>
-
-                        {product.saleMode === ProductSaleMode.MULTI ? (
-                          <>
-                            <div className="admin-sku-stack">
-                              {product.skus.map((sku) => (
-                                <form key={sku.id} action={updateMerchantSkuAction} className="admin-sku-card">
-                                  <MerchantTabInput tab="products" returnTo={returnTo} />
-                                  <input type="hidden" name="skuId" value={sku.id} />
-                                  <input type="hidden" name="productSlug" value={product.slug} />
-
-                                  <div className="admin-sku-head">
-                                    <div>
-                                      <strong>{sku.name}</strong>
-                                      <p className="small-copy">
-                                        可售 {sku.stock.available} / 占用 {sku.stock.reserved} / 已售 {sku.stock.sold}
-                                      </p>
-                                    </div>
-                                    <span className={`badge ${sku.enabled ? "success" : "muted"}`}>
-                                      {sku.enabled ? "启用中" : "已停用"}
-                                    </span>
-                                  </div>
-
-                                  <div className="inline-grid">
-                                    <div className="field">
-                                      <label>SKU 名称</label>
-                                      <input name="name" defaultValue={sku.name} required />
-                                    </div>
-                                    <div className="field">
-                                      <label>SKU 售价</label>
-                                      <input name="price" defaultValue={(sku.priceCents / 100).toFixed(2)} required />
-                                    </div>
-                                  </div>
-
-                                  <div className="field">
-                                    <label>SKU 说明</label>
-                                    <input name="summary" defaultValue={sku.summary ?? ""} />
-                                  </div>
-
-                                  <div className="field">
-                                    <label>阶梯价规则</label>
-                                    <SkuPricingTierEditor name="pricingTiers" initialValue={sku.pricingTiers} />
-                                  </div>
-
-                                  <label className="admin-check-row">
-                                    <input type="checkbox" name="enabled" defaultChecked={sku.enabled} />
-                                    <span>启用该 SKU</span>
-                                  </label>
-
-                                  <div className="button-row">
-                                    <button type="submit" className="button-secondary">
-                                      更新 SKU
-                                    </button>
-
-                                    <button
-                                      formAction={deleteMerchantSkuAction}
-                                      formNoValidate
-                                      type="submit"
-                                      className="button-link"
-                                    >
-                                      删除 SKU
-                                    </button>
-                                  </div>
-                                </form>
-                              ))}
-                            </div>
-
-                            <form action={createMerchantSkuAction} className="admin-sku-create">
-                              <MerchantTabInput tab="products" returnTo={returnTo} />
-                              <input type="hidden" name="productId" value={product.id} />
-                              <input type="hidden" name="productSlug" value={product.slug} />
-
-                              <div className="admin-subsection-head">
-                                <h3>新增 SKU</h3>
-                                <p className="small-copy">继续往这个商品下挂更多规格</p>
-                              </div>
-
-                              <div className="inline-grid">
-                                <div className="field">
-                                  <label>SKU 名称</label>
-                                  <input name="name" placeholder="例如 年卡" required />
-                                </div>
-                                <div className="field">
-                                  <label>SKU 售价</label>
-                                  <input name="price" placeholder="99.00" required />
-                                </div>
-                              </div>
-
-                              <div className="field">
-                                <label>SKU 说明</label>
-                                <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
-                              </div>
-
-                              <div className="field">
-                                <label>阶梯价规则</label>
-                                <SkuPricingTierEditor name="pricingTiers" />
-                              </div>
-
-                              <label className="admin-check-row">
-                                <input type="checkbox" name="enabled" defaultChecked />
-                                <span>创建后立即启用</span>
-                              </label>
-
-                              <button type="submit" className="button">
-                                添加 SKU
-                              </button>
-                            </form>
-                          </>
-                        ) : singleModeSku ? (
-                          <>
-                            <form action={updateMerchantSkuAction} className="admin-sku-card">
-                              <MerchantTabInput tab="products" returnTo={returnTo} />
-                              <input type="hidden" name="skuId" value={singleModeSku.id} />
-                              <input type="hidden" name="productSlug" value={product.slug} />
-
-                              <div className="admin-sku-head">
-                                <div>
-                                  <strong>{singleModeSku.name}</strong>
-                                  <p className="small-copy">
-                                    可售 {singleModeSku.stock.available} / 占用 {singleModeSku.stock.reserved} / 已售 {singleModeSku.stock.sold}
-                                  </p>
-                                </div>
-                                <span className={`badge ${singleModeSku.enabled ? "success" : "muted"}`}>
-                                  {singleModeSku.enabled ? "启用中" : "已停用"}
-                                </span>
-                              </div>
-
-                              <div className="inline-grid">
-                                <div className="field">
-                                  <label>默认规格名称</label>
-                                  <input name="name" defaultValue={singleModeSku.name} required />
-                                </div>
-                                <div className="field">
-                                  <label>商品售价</label>
-                                  <input
-                                    name="price"
-                                    defaultValue={(singleModeSku.priceCents / 100).toFixed(2)}
-                                    required
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="field">
-                                <label>商品说明</label>
-                                <input name="summary" defaultValue={singleModeSku.summary ?? ""} />
-                              </div>
-
-                              <div className="field">
-                                <label>阶梯价规则</label>
-                                <SkuPricingTierEditor name="pricingTiers" initialValue={singleModeSku.pricingTiers} />
-                              </div>
-
-                              <label className="admin-check-row">
-                                <input type="checkbox" name="enabled" defaultChecked={singleModeSku.enabled} />
-                                <span>启用该商品</span>
-                              </label>
-
-                              <div className="button-row">
-                                <button type="submit" className="button-secondary">
-                                  更新单商品配置
-                                </button>
-
-                                {product.skus.length > 1 ? (
-                                  <button
-                                    formAction={deleteMerchantSkuAction}
-                                    formNoValidate
-                                    type="submit"
-                                    className="button-link"
-                                  >
-                                    删除当前默认规格
-                                  </button>
-                                ) : null}
-                              </div>
-                            </form>
-
-                            {product.skus.length > 1 ? (
-                              <p className="small-copy">
-                                当前商品还保留 {product.skus.length - 1} 个额外 SKU；切回多 SKU 模式后会重新出现在前台和后台列表中。
-                              </p>
-                            ) : null}
-                          </>
-                        ) : (
-                          <div className="admin-empty-state">
-                            <strong>缺少默认规格</strong>
-                            <p>这个单商品当前没有可管理的默认规格，请先切换为多 SKU 模式补充规格。</p>
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
+              {dashboard.products.length === 0 ? (
+                <div className="admin-empty-state">
+                  <strong>还没有你自己的商品</strong>
+                  <p>
+                    {paymentProfile
+                      ? "现在已经可以由你自己创建商品了。先建一个商品，后面就能继续配 SKU。"
+                      : "先保存 NovaPay 参数，再创建属于你自己的商品。"}
+                  </p>
+                </div>
+              ) : isDedicatedPage ? (
+                selectedProduct ? (
+                  <div className="admin-product-list">
+                    <div className="admin-product-detail-note">
+                      <strong>当前正在配置 {selectedProduct.name}</strong>
+                      <p>商品基础信息、SKU、价格、阶梯价和启用状态都集中在这一页，列表页只保留摘要和入口。</p>
+                    </div>
+                    <MerchantProductConfigurationArticle
+                      merchant={merchant}
+                      paymentProfile={paymentProfile}
+                      product={selectedProduct}
+                      returnTo={returnTo}
+                      selectedSkuId={selectedSkuId}
+                    />
+                  </div>
+                ) : (
+                  <div className="admin-empty-state">
+                    <strong>商品不存在</strong>
+                    <p>这个商品可能已经被删除，或者当前地址已经失效。</p>
+                  </div>
+                )
+              ) : (
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-product-catalog-table">
+                    <thead>
+                      <tr>
+                        <th>商品</th>
+                        <th>模式</th>
+                        <th>状态</th>
+                        <th>当前商户</th>
+                        <th>SKU / 库存</th>
+                        <th>最低售价</th>
+                        <th>操作</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dashboard.products.map((product) => (
+                        <tr key={product.id}>
+                          <td className="admin-product-table-cell">
+                            <strong>{product.name}</strong>
+                            <p className="small-copy">{product.slug}</p>
+                            <p className="small-copy">{product.summary?.trim() ? product.summary : "暂无简介"}</p>
+                          </td>
+                          <td>{getProductSaleModeLabel(product.saleMode)}</td>
+                          <td>
+                            <span className={`badge ${getProductStatusTone(product.status)}`}>
+                              {getProductStatusLabel(product.status)}
+                            </span>
+                          </td>
+                          <td>{paymentProfile ? `${paymentProfile.name} / ${paymentProfile.merchantCode}` : "未配置"}</td>
+                          <td>
+                            SKU {product.skus.length}
+                            <br />
+                            可售 {product.stock.available} / 已售 {product.stock.sold}
+                          </td>
+                          <td>{describeOrderAmount(product.startingPriceCents)}</td>
+                          <td className="admin-table-action-stack">
+                            <MerchantQuickToggleForm
+                              action={toggleMerchantProductStatusAction}
+                              tab="products"
+                              returnTo={returnTo}
+                              fields={{ productId: product.id }}
+                              active={product.status === ProductStatus.ACTIVE}
+                              activeLabel="下架商品"
+                              inactiveLabel="上架商品"
+                            />
+                            <Link href={buildMerchantProductConfigPath(product.id)} className="button-secondary">
+                              配置商品
+                            </Link>
+                            <Link href={buildMerchantStorefrontProductPath(merchant.id, product.slug)} className="button-link">
+                              打开前台页
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </article>
           ) : null}
         </div>
@@ -1658,8 +2058,17 @@ function InventorySection({
                           <td>{row.available}</td>
                           <td>{row.reserved}</td>
                           <td>{row.sold}</td>
-                          <td>
-                            <form action={clearMerchantSkuInventoryAction} className="admin-compact-actions">
+                          <td className="admin-table-action-stack">
+                            <MerchantQuickToggleForm
+                              action={toggleMerchantSkuEnabledAction}
+                              tab="inventory"
+                              returnTo={returnTo}
+                              fields={{ skuId: row.skuId }}
+                              active={row.enabled}
+                              activeLabel="停用 SKU"
+                              inactiveLabel="启用 SKU"
+                            />
+                            <form action={clearMerchantSkuInventoryAction} className="admin-quick-toggle-form">
                               <MerchantTabInput tab="inventory" returnTo={returnTo} />
                               <input type="hidden" name="skuId" value={row.skuId} />
                               <input type="hidden" name="productSlug" value={row.productSlug} />
@@ -2642,6 +3051,18 @@ function PaymentsSection({
                 </p>
 
                 <div className="button-row">
+                  {paymentProfile ? (
+                    <MerchantQuickToggleForm
+                      action={toggleMerchantPaymentProfileEnabledAction}
+                      tab="payments"
+                      returnTo={returnTo}
+                      fields={{}}
+                      active={paymentProfile.isActive}
+                      activeLabel="停用商户"
+                      inactiveLabel="启用商户"
+                    />
+                  ) : null}
+
                   <button type="submit" className="button">
                     保存商户参数
                   </button>
@@ -2999,6 +3420,15 @@ function SettingsSection({
                 </label>
 
                 <div className="button-row">
+                  <MerchantQuickToggleForm
+                    action={toggleMerchantStorefrontAnnouncementEnabledAction}
+                    tab="settings"
+                    returnTo={returnTo}
+                    fields={{}}
+                    active={merchant.storeAnnouncementEnabled}
+                    activeLabel="隐藏公告"
+                    inactiveLabel="展示公告"
+                  />
                   <button type="submit" className="button-secondary">
                     保存店铺公告
                   </button>
@@ -3201,6 +3631,9 @@ export function MerchantConsoleView({
   paymentProfileRevisions,
   dashboard,
   paymentOperations,
+  selectedProductId,
+  selectedSkuId,
+  productsReturnTo,
 }: {
   currentTab: MerchantTab;
   currentView: MerchantTabView;
@@ -3211,6 +3644,9 @@ export function MerchantConsoleView({
   paymentProfileRevisions: PaymentProfileRevisionSummary[];
   dashboard: MerchantDashboardData;
   paymentOperations: PaymentOperationsData | null;
+  selectedProductId?: string;
+  selectedSkuId?: string;
+  productsReturnTo?: string;
 }) {
   const tabMeta = MERCHANT_TAB_META[currentTab];
   const currentSections = getMerchantPageSections(currentTab).filter((section) =>
@@ -3638,7 +4074,9 @@ export function MerchantConsoleView({
             insights={insights}
             cards={productCards}
             visibleSectionIds={currentView.sectionIds}
-            returnTo={currentView.href}
+            returnTo={productsReturnTo ?? currentView.href}
+            selectedProductId={selectedProductId}
+            selectedSkuId={selectedSkuId}
           />
         ) : null}
 

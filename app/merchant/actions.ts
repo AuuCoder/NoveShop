@@ -42,6 +42,8 @@ import {
   replayMerchantOwnedWebhookEventLog,
   refreshMerchantOwnedOrderByPublicToken,
   runMerchantOwnedOrderSyncTask,
+  toggleMerchantProductSkuEnabled,
+  toggleMerchantProductStatus,
   updateMerchantCardItem,
   updateMerchantProduct,
   updateMerchantProductSku,
@@ -405,6 +407,120 @@ export async function deleteMerchantPaymentProfileAction(formData: FormData) {
   }
 }
 
+export async function toggleMerchantPaymentProfileEnabledAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const returnTo = normalizeMerchantReturnTo(formData.get("returnTo"));
+  const existing = await getMerchantOwnedPaymentProfile(merchant.id);
+
+  if (!existing) {
+    redirect(appendMessageToPath(returnTo, "error", "请先保存一套 NovaPay 商户参数。"));
+  }
+
+  const beforeState = buildPaymentProfileAuditState(existing);
+  if (!beforeState) {
+    redirect(appendMessageToPath(returnTo, "error", "当前商户参数状态异常，暂时无法切换。"));
+  }
+  const nextIsActive = !existing.isActive;
+  const attemptedState = buildPaymentProfileAuditState({
+    ...existing,
+    isActive: nextIsActive,
+    isDefault: false,
+  }) ?? beforeState;
+  const changeSummary = nextIsActive ? "商户快捷启用 NovaPay 配置" : "商户快捷停用 NovaPay 配置";
+  const changeDetail = describePaymentProfileAuditChange({
+    before: beforeState,
+    after: attemptedState,
+    apiCredentialTouched: false,
+    notifySecretTouched: false,
+  });
+
+  try {
+    const profile = await saveMerchantOwnedPaymentProfile({
+      merchantAccountId: merchant.id,
+      name: existing.name,
+      merchantCode: existing.merchantCode,
+      apiKey: existing.apiKey,
+      apiSecret: existing.apiSecret,
+      notifySecret: existing.notifySecret ?? "",
+      defaultChannelCode: existing.defaultChannelCode,
+      enabledChannelCodes: existing.enabledChannelCodes,
+      isActive: nextIsActive,
+      revision: {
+        sourceScope: "MERCHANT",
+        actorType: "MERCHANT_ACCOUNT",
+        actorId: merchant.id,
+        actorLabel: merchant.email,
+        changeType: "UPDATE",
+        summary: changeSummary,
+      },
+    });
+
+    revalidateMerchantSurface(merchant.id);
+
+    await captureControlAuditLog({
+      scope: "MERCHANT",
+      actorType: "MERCHANT_ACCOUNT",
+      actorId: merchant.id,
+      actorLabel: merchant.email,
+      merchantAccountId: merchant.id,
+      paymentProfileId: profile.id,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: resolvePaymentProfileAuditRisk({
+        before: beforeState,
+        after: attemptedState,
+        apiCredentialTouched: false,
+        notifySecretTouched: false,
+      }),
+      outcome: "SUCCEEDED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: profile.id,
+      targetLabel: buildPaymentProfileAuditTargetLabel(profile),
+      summary: changeSummary,
+      detail: changeDetail,
+      payload: {
+        before: beforeState,
+        after: buildPaymentProfileAuditState(profile) ?? attemptedState,
+      },
+    });
+
+    redirect(
+      appendMessageToPath(
+        returnTo,
+        "success",
+        profile.isActive ? "NovaPay 商户参数已一键启用。" : "NovaPay 商户参数已一键停用。",
+      ),
+    );
+  } catch (error) {
+    await captureControlAuditLog({
+      scope: "MERCHANT",
+      actorType: "MERCHANT_ACCOUNT",
+      actorId: merchant.id,
+      actorLabel: merchant.email,
+      merchantAccountId: merchant.id,
+      paymentProfileId: existing.id,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: resolvePaymentProfileAuditRisk({
+        before: beforeState,
+        after: attemptedState,
+        apiCredentialTouched: false,
+        notifySecretTouched: false,
+      }),
+      outcome: "FAILED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: existing.id,
+      targetLabel: buildPaymentProfileAuditTargetLabel(existing),
+      summary: `${changeSummary}失败`,
+      detail: getMessage(error),
+      payload: {
+        before: beforeState,
+        attempted: attemptedState,
+      },
+    });
+
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
 export async function rollbackMerchantPaymentProfileRevisionAction(formData: FormData) {
   const merchant = await requireMerchantSession();
   const returnTo = normalizeMerchantReturnTo(formData.get("returnTo"));
@@ -543,6 +659,30 @@ export async function updateMerchantProductAction(formData: FormData) {
   }
 }
 
+export async function toggleMerchantProductStatusAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const tab = parseMerchantTab(formData.get("tab"), "products");
+  const returnTo = normalizeMerchantConsoleReturnTo(formData.get("returnTo"), buildMerchantHref(tab));
+
+  try {
+    const product = await toggleMerchantProductStatus({
+      merchantAccountId: merchant.id,
+      productId: String(formData.get("productId") ?? ""),
+    });
+
+    revalidateMerchantSurface(merchant.id, product.slug);
+    redirect(
+      appendMessageToPath(
+        returnTo,
+        "success",
+        product.status === ProductStatus.ACTIVE ? "商品已一键上架。" : "商品已一键下架。",
+      ),
+    );
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
 export async function createMerchantSkuAction(formData: FormData) {
   const merchant = await requireMerchantSession();
   const productSlug = String(formData.get("productSlug") ?? "");
@@ -586,6 +726,30 @@ export async function updateMerchantSkuAction(formData: FormData) {
 
     revalidateMerchantSurface(merchant.id, productSlug);
     redirect(appendMessageToPath(returnTo, "success", "SKU 已更新。"));
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
+export async function toggleMerchantSkuEnabledAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const tab = parseMerchantTab(formData.get("tab"), "products");
+  const returnTo = normalizeMerchantConsoleReturnTo(formData.get("returnTo"), buildMerchantHref(tab));
+
+  try {
+    const sku = await toggleMerchantProductSkuEnabled({
+      merchantAccountId: merchant.id,
+      skuId: String(formData.get("skuId") ?? ""),
+    });
+
+    revalidateMerchantSurface(merchant.id, sku.productSlug);
+    redirect(
+      appendMessageToPath(
+        returnTo,
+        "success",
+        sku.enabled ? "SKU 已一键启用。" : "SKU 已一键停用。",
+      ),
+    );
   } catch (error) {
     redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
   }
@@ -985,6 +1149,33 @@ export async function updateMerchantStorefrontAnnouncementAction(formData: FormD
     revalidateMerchantSurface(merchant.id);
     revalidatePath("/store/[merchantId]/products/[slug]", "page");
     redirect(appendMessageToPath(returnTo, "success", "店铺公告已更新。"));
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
+export async function toggleMerchantStorefrontAnnouncementEnabledAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const tab = parseMerchantTab(formData.get("tab"), "settings");
+  const returnTo = normalizeMerchantConsoleReturnTo(formData.get("returnTo"), buildMerchantHref(tab));
+
+  try {
+    const nextAnnouncement = await saveMerchantStorefrontAnnouncement({
+      merchantAccountId: merchant.id,
+      enabled: !merchant.storeAnnouncementEnabled,
+      title: merchant.storeAnnouncementTitle ?? "",
+      body: merchant.storeAnnouncementBody ?? "",
+    });
+
+    revalidateMerchantSurface(merchant.id);
+    revalidatePath("/store/[merchantId]/products/[slug]", "page");
+    redirect(
+      appendMessageToPath(
+        returnTo,
+        "success",
+        nextAnnouncement.enabled ? "店铺公告已一键展示。" : "店铺公告已一键隐藏。",
+      ),
+    );
   } catch (error) {
     redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
   }

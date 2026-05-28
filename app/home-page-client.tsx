@@ -1,6 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Boxes,
+  CheckCircle2,
+  CreditCard,
+  Layers,
+  PackageSearch,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Workflow,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { useSitePreferences, type SiteLanguage } from "@/app/ui-preferences";
 import {
   buildMerchantStorefrontPath,
@@ -8,6 +25,8 @@ import {
   buildPlatformStorefrontPath,
   buildStorefrontProductPath,
 } from "@/lib/storefront";
+import { cn } from "@/lib/utils";
+import { CountUp, RevealOnScroll, SpotlightCard } from "@/app/home-effects";
 
 type ProductSaleModeValue = "SINGLE" | "MULTI";
 
@@ -89,26 +108,22 @@ function getProductModeLabel(language: SiteLanguage, mode: ProductSaleModeValue)
 }
 
 function renderHeroTitle(language: SiteLanguage) {
+  const accent =
+    "bg-gradient-to-r from-primary via-primary/85 to-accent-foreground/70 bg-clip-text text-transparent";
   if (language === "zh") {
     return (
       <>
-        <span className="hero-title-line">把平台官方渠道与</span>
-        <span className="hero-title-line">
-          <span className="hero-title-accent">合作方协同运营</span>统一到
-        </span>
-        <span className="hero-title-line">一套数字商品业务底座</span>
+        把<span className={accent}> 平台官方渠道 </span>与
+        <span className={accent}> 合作方协同 </span>
+        统一到一套数字商品业务底座
       </>
     );
   }
 
   return (
     <>
-      <span className="hero-title-line">Run official retail and</span>
-      <span className="hero-title-line">merchant storefronts with</span>
-      <span className="hero-title-line">
-        <span className="hero-title-accent">multi-merchant payments</span>
-      </span>
-      <span className="hero-title-line">from one digital goods platform</span>
+      Run <span className={accent}>official retail</span> and
+      <span className={accent}> merchant storefronts</span> with multi-merchant payments from one digital goods platform
     </>
   );
 }
@@ -211,7 +226,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         ],
         commandTitle: "See the homepage, storefronts, payment routing, and fulfillment in one operating view",
         kicker: "Enterprise Digital Goods Platform",
-        lead: "NoveShop turns the homepage into a proper brand landing page. The platform store lives at `/store/platform`, while each merchant keeps an isolated `/store/[merchantId]` storefront with its own catalog, inventory, NovaPay profile, and order ownership.",
+        lead: "NoveShop turns the homepage into a proper brand landing page. The platform store lives at /store/platform, while each merchant keeps an isolated /store/[merchantId] storefront with its own catalog, inventory, NovaPay profile, and order ownership.",
         signals: ["Official Retail", "Merchant Storefronts", "NovaPay Routing", "SKU Fulfillment"],
         title: "Run official retail, merchant storefronts, and multi-merchant payments from one digital goods platform",
       },
@@ -221,8 +236,8 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         onboardingEyebrow: "Merchant Onboarding",
         onboardingDetail:
           "Register merchants, configure their NovaPay profiles, and create merchant-owned products and SKUs. The homepage will automatically reflect the storefront network.",
-        onboardingMetric: "Next step: enable merchant onboarding and payment setup",
-        onboardingTitle: "No merchant showcase is available yet",
+        onboardingMetric: "Next: enable merchant onboarding and payment setup",
+        onboardingTitle: "No merchant showcase available yet",
         sampleDescription:
           "An isolated merchant storefront with its own product catalog, SKU matrix, stock, and NovaPay payment profile.",
         sampleEyebrow: "Merchant Sample",
@@ -245,17 +260,12 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         architecture: {
           copy: "The real value is not a single pay button. It is an end-to-end loop where ownership, payment state, sync, and fulfillment stay consistent for every merchant.",
           kicker: "Business Loop",
-          title: "The operating loop from payment setup to automated card fulfillment",
+          title: "From payment setup to automated card fulfillment",
         },
         capabilities: {
           copy: "The goal is not just to connect payments, but to keep catalog structure, payment ownership, stock, and delivery running as one system.",
           kicker: "Capabilities",
           title: "Core platform capabilities for multi-merchant digital distribution",
-        },
-        solutions: {
-          copy: "The homepage no longer dumps product listings first. It explains platform roles, routing, and storefront boundaries before users convert.",
-          kicker: "Solutions",
-          title: "Built for platform retail and merchant-owned storefronts in the same system",
         },
         stores: {
           copy: "The homepage handles brand positioning while storefronts handle conversion. That keeps both the platform and merchants customer-facing in a clear way.",
@@ -263,35 +273,6 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           title: "One brand homepage, separate official and merchant storefronts",
         },
       },
-      solutionCards: [
-        {
-          action: "View Official Store",
-          description:
-            "Platform-owned products now live in `/store/platform`, so the homepage can stay focused on the brand instead of mixing catalog and admin entry points.",
-          eyebrow: "Platform Retail",
-          href: buildPlatformStorefrontPath(),
-          metric: `${platformProductCount} official products`,
-          title: "Platform Official Store",
-        },
-        {
-          action: "Register Merchant",
-          description:
-            "Every merchant receives an isolated `/store/[merchantId]` storefront where products, SKUs, stock, and order ownership all stay separated.",
-          eyebrow: "Merchant Storefront",
-          href: "/merchant/register",
-          metric: `${merchantStoreCount} storefronts`,
-          title: "Merchant-Owned Frontends",
-        },
-        {
-          action: "Open Merchant Hub",
-          description:
-            "NovaPay is not hardcoded to the platform anymore. Orders route through the payment profile bound to each product owner.",
-          eyebrow: "Payment Routing",
-          href: "/merchant",
-          metric: `${activeMerchantPaymentCount} active merchant profiles`,
-          title: "NovaPay Multi-Merchant Routing",
-        },
-      ],
       storeBanner: {
         chip: "Official Store",
         copy: "Platform-owned products, SKUs, inventory, and orders are now contained in the official store. Visitors stay on the homepage for positioning, then jump into the right storefront to convert.",
@@ -302,7 +283,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           { label: "Multi-SKU Products", value: multiSkuProductCount },
           { label: "Merchant Stores", value: merchantStoreCount },
         ],
-        title: "The platform store now lives at `/store/platform`",
+        title: "The platform store now lives at /store/platform",
       },
       trustCards: [
         {
@@ -441,7 +422,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           detail: "订单按商品归属的业务主体收款，状态确认后自动触发交付。",
           label: "支付履约",
           step: "04",
-          value: "支付确认 -> 自动交付",
+          value: "支付确认 → 自动交付",
         },
       ],
       commandTitle: "把品牌入口、官方渠道、合作方站点与自动履约串成一套清晰的业务视图",
@@ -486,76 +467,42 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         kicker: "核心能力",
         title: "围绕多商户数字商品分发搭建的平台能力",
       },
-      solutions: {
-        copy: "围绕品牌官网、官方渠道、合作方站点与统一支付治理，建立清晰的对外服务入口与业务边界。",
-        kicker: "解决方案",
-        title: "适用于平台自营与合作方协同运营的数字商品模式",
-      },
       stores: {
         copy: "首页负责品牌表达与方案说明，官方渠道和合作方站点分别承接成交与服务。",
         kicker: "站点网络",
         title: "统一品牌入口，分层承接平台官方渠道与合作方站点",
       },
     },
-    solutionCards: [
-      {
-        action: "进入官方渠道",
-        description:
-          "面向平台自营商品、重点活动与品牌转化的统一成交入口，承接品牌流量并保持交易链路稳定。",
-        eyebrow: "平台官方渠道",
-        href: buildPlatformStorefrontPath(),
-        metric: `${platformProductCount} 个在线商品`,
-        title: "平台官方渠道",
-      },
-      {
-        action: "申请接入",
-        description:
-          "为合作方提供独立的商品展示、库存履约与订单归属空间，确保业务边界清晰且便于后续扩展。",
-        eyebrow: "合作方站点",
-        href: "/merchant/register",
-        metric: `${merchantStoreCount} 个合作方站点`,
-        title: "合作方专属站点",
-      },
-      {
-        action: "进入业务中心",
-        description:
-          "平台与合作方可分别维护支付参数与默认通道，订单按归属主体自动路由收款并统一追踪状态。",
-        eyebrow: "统一支付治理",
-        href: "/merchant",
-        metric: `${activeMerchantPaymentCount} 个主体已启用`,
-        title: "多主体支付治理",
-      },
-    ],
     storeBanner: {
-      chip: "平台官方渠道",
-      copy: "平台自营商品、SKU、库存与订单统一收敛到官方渠道。首页负责品牌表达，进入渠道后再完成商品浏览、下单与履约。",
+      chip: "官方渠道",
+      copy: "平台自营商品、规格、库存与订单统一在官方渠道呈现。访客在首页了解定位，再跳转到合适的站点完成成交。",
       cta: "进入官方渠道",
-      merchantCta: "申请接入",
+      merchantCta: "申请接入合作方",
       stats: [
-        { label: "在线商品", value: platformProductCount },
+        { label: "官方商品", value: platformProductCount },
         { label: "多规格商品", value: multiSkuProductCount },
         { label: "合作方站点", value: merchantStoreCount },
       ],
-      title: "平台官方渠道作为统一成交入口独立承载自营业务",
+      title: "官方渠道入口位于 /store/platform",
     },
     trustCards: [
       {
-        detail: "已具备独立站点与收款配置的合作方",
+        detail: "拥有独立站点与收款配置的合作方数量。",
         label: "合作方站点",
         value: merchantStoreCount,
       },
       {
-        detail: "官方渠道当前可售规格数量",
-        label: "官方渠道规格",
+        detail: "官方渠道当前可售规格的总量。",
+        label: "官方在售规格",
         value: totalSkuCount,
       },
       {
-        detail: "官方渠道可即时履约的库存规模",
-        label: "官方渠道库存",
+        detail: "官方渠道当前可即时交付的库存数量。",
+        label: "可售库存",
         value: totalStock,
       },
       {
-        detail: "合作方侧已上线商品总量",
+        detail: "合作方侧已上架的商品总量。",
         label: "合作方商品",
         value: totalMerchantProducts,
       },
@@ -596,345 +543,640 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
   };
 }
 
+const capabilityIcons = [Layers, Boxes, ShieldCheck, Workflow];
+const flowIcons = [CreditCard, Layers, Store, CheckCircle2];
+
 export default function HomePageClient(props: HomePageClientProps) {
   const { featuredMerchants, highlightedProducts, keyword } = props;
   const { language } = useSitePreferences();
   const copy = getHomeCopy(language, props);
 
   return (
-    <div className="enterprise-home">
-      <section className="hero enterprise-hero">
-        <div className="enterprise-hero-grid">
-          <div className="enterprise-hero-copy">
-            <p className="hero-kicker">{copy.hero.kicker}</p>
-            <span className="chip chip-primary">{copy.hero.chip}</span>
-            <h1>{renderHeroTitle(language)}</h1>
-            <p className="section-copy hero-lead">{copy.hero.lead}</p>
+    <div className="bg-background text-foreground">
+      <HeroSection copy={copy} language={language} />
+      <CapabilitiesSection copy={copy} />
+      <ArchitectureSection copy={copy} />
+      <StoreNetworkSection
+        copy={copy}
+        featuredMerchants={featuredMerchants}
+        language={language}
+      />
+      <PreviewSection
+        copy={copy}
+        highlightedProducts={highlightedProducts}
+        keyword={keyword}
+        language={language}
+      />
+    </div>
+  );
+}
 
-            <div className="hero-signal-list" aria-label="platform-signals">
-              {copy.hero.signals.map((signal) => (
-                <span key={signal} className="hero-signal-badge">
-                  {signal}
-                </span>
-              ))}
-            </div>
+type HomeCopy = ReturnType<typeof getHomeCopy>;
 
-            <div className="button-row">
-              <Link href={buildPlatformStorefrontPath()} className="button">
-                {copy.ui.openStorefront}
-              </Link>
-              <Link href="/merchant" className="button-secondary">
-                {copy.ui.openMerchantHub}
-              </Link>
-              <Link href="/merchant/register" className="button-secondary">
-                {copy.ui.registerMerchant}
-              </Link>
-              <Link href="/#architecture" className="button-link">
-                {copy.ui.browseFlow}
-              </Link>
-            </div>
+function SectionHeader({
+  kicker,
+  title,
+  copy,
+  align = "split",
+}: {
+  kicker: string;
+  title: string;
+  copy: string;
+  align?: "split" | "center";
+}) {
+  if (align === "center") {
+    return (
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          {kicker}
+        </p>
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{copy}</p>
+      </div>
+    );
+  }
 
-            <div className="enterprise-trust-grid">
-              {copy.trustCards.map((item) => (
-                <article key={item.label} className="enterprise-trust-card">
-                  <span className="enterprise-trust-label">{item.label}</span>
-                  <strong className="enterprise-trust-value">{item.value}</strong>
-                  <p className="small-copy">{item.detail}</p>
-                </article>
-              ))}
-            </div>
-          </div>
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-end">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+          {kicker}
+        </p>
+        <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h2>
+      </div>
+      <p className="text-sm leading-relaxed text-muted-foreground">{copy}</p>
+    </div>
+  );
+}
 
-          <div className="enterprise-hero-side">
-            <article className="enterprise-hero-card enterprise-command-card">
-              <div className="enterprise-card-top">
-                <span className="enterprise-eyebrow">{copy.hero.commandEyebrow}</span>
-                <strong>{copy.hero.commandTitle}</strong>
-              </div>
+function HeroSection({ copy, language }: { copy: HomeCopy; language: SiteLanguage }) {
+  return (
+    <section className="relative overflow-hidden border-b border-border/60 bg-gradient-to-b from-secondary/60 via-background to-background">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 right-1/4 -z-10 h-[520px] w-[520px] animate-orb-a rounded-full bg-primary/10 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-40 -left-20 -z-10 h-[420px] w-[420px] animate-orb-b rounded-full bg-accent/40 blur-3xl"
+      />
+      <div className="mx-auto grid w-full max-w-7xl gap-14 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20 lg:px-8 lg:py-32">
+        <div className="flex flex-col gap-7">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            {copy.hero.kicker}
+          </p>
 
-              <div className="command-screen">
-                {copy.hero.commandStages.map((stage, index) => (
-                  <article key={stage.step} className="command-stage">
-                    <span className="command-stage-index">{stage.step}</span>
-                    <div className="command-stage-body">
-                      <span className="command-stage-label">{stage.label}</span>
-                      <strong>{stage.value}</strong>
-                      <p>{stage.detail}</p>
-                    </div>
-                    {index < copy.hero.commandStages.length - 1 ? (
-                      <span className="command-stage-link" />
-                    ) : null}
-                  </article>
-                ))}
-              </div>
-            </article>
+          <Badge
+            variant="outline"
+            className="w-fit gap-1.5 rounded-full border-border/80 bg-background px-3 py-1 text-xs font-medium text-muted-foreground"
+          >
+            <Sparkles className="h-3 w-3" />
+            {copy.hero.chip}
+          </Badge>
 
-            <div className="enterprise-kpi-grid">
-              {copy.kpiCards.map((item) => (
-                <article key={item.label} className="enterprise-kpi-card">
-                  <span className="enterprise-kpi-label">{item.label}</span>
-                  <strong className="enterprise-kpi-value">{item.value}</strong>
-                  <p className="enterprise-kpi-copy">{item.detail}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+          <h1 className="text-pretty text-4xl font-semibold leading-[1.15] tracking-tight sm:text-5xl lg:text-6xl">
+            {renderHeroTitle(language)}
+          </h1>
 
-      <section id="solutions" className="section enterprise-section">
-        <div className="enterprise-section-head">
-          <div>
-            <p className="enterprise-section-kicker">{copy.sections.solutions.kicker}</p>
-            <h2 className="section-title">{copy.sections.solutions.title}</h2>
-          </div>
-          <p className="section-copy enterprise-section-copy">{copy.sections.solutions.copy}</p>
-        </div>
+          <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            {copy.hero.lead}
+          </p>
 
-        <div className="enterprise-grid enterprise-grid-3">
-          {copy.solutionCards.map((item) => (
-            <article key={item.title} className="enterprise-card">
-              <span className="enterprise-eyebrow">{item.eyebrow}</span>
-              <h3 className="enterprise-card-title">{item.title}</h3>
-              <p className="section-copy">{item.description}</p>
-              <div className="enterprise-card-foot">
-                <span className="enterprise-metric">{item.metric}</span>
-                <Link href={item.href} className="button-link">
-                  {item.action}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="capabilities" className="section enterprise-section">
-        <div className="enterprise-section-head">
-          <div>
-            <p className="enterprise-section-kicker">{copy.sections.capabilities.kicker}</p>
-            <h2 className="section-title">{copy.sections.capabilities.title}</h2>
-          </div>
-          <p className="section-copy enterprise-section-copy">{copy.sections.capabilities.copy}</p>
-        </div>
-
-        <div className="enterprise-grid enterprise-grid-2x2">
-          {copy.capabilityCards.map((item) => (
-            <article key={item.title} className="enterprise-card enterprise-card-soft">
-              <span className="enterprise-eyebrow">{item.eyebrow}</span>
-              <h3 className="enterprise-card-title">{item.title}</h3>
-              <p className="section-copy">{item.description}</p>
-              <p className="enterprise-detail">{item.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="architecture" className="section enterprise-section">
-        <div className="enterprise-section-head">
-          <div>
-            <p className="enterprise-section-kicker">{copy.sections.architecture.kicker}</p>
-            <h2 className="section-title">{copy.sections.architecture.title}</h2>
-          </div>
-          <p className="section-copy enterprise-section-copy">{copy.sections.architecture.copy}</p>
-        </div>
-
-        <div className="enterprise-flow-grid">
-          {copy.flowSteps.map((item) => (
-            <article key={item.step} className="enterprise-flow-card">
-              <span className="enterprise-flow-index">{item.step}</span>
-              <h3 className="enterprise-card-title">{item.title}</h3>
-              <p className="section-copy">{item.copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section id="stores" className="section enterprise-section">
-        <div className="enterprise-section-head">
-          <div>
-            <p className="enterprise-section-kicker">{copy.sections.stores.kicker}</p>
-            <h2 className="section-title">{copy.sections.stores.title}</h2>
-          </div>
-          <p className="section-copy enterprise-section-copy">{copy.sections.stores.copy}</p>
-        </div>
-
-        <article className="enterprise-banner-card">
-          <div>
-            <span className="chip chip-primary">{copy.storeBanner.chip}</span>
-            <h3 className="enterprise-banner-title">{copy.storeBanner.title}</h3>
-            <p className="section-copy enterprise-banner-copy">{copy.storeBanner.copy}</p>
-          </div>
-
-          <div className="enterprise-banner-stats">
-            {copy.storeBanner.stats.map((item) => (
-              <div key={item.label} className="enterprise-banner-stat">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-              </div>
+          <div className="flex flex-wrap gap-2">
+            {copy.hero.signals.map((signal) => (
+              <span
+                key={signal}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background px-3 py-1 text-xs text-muted-foreground"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                {signal}
+              </span>
             ))}
           </div>
 
-          <div className="button-row compact">
-            <Link href={buildPlatformStorefrontPath()} className="button">
-              {copy.storeBanner.cta}
-            </Link>
-            <Link href="/merchant/register" className="button-secondary">
-              {copy.storeBanner.merchantCta}
-            </Link>
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Button asChild size="lg">
+              <Link href={buildPlatformStorefrontPath()}>
+                {copy.ui.openStorefront}
+                <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/merchant">{copy.ui.openMerchantHub}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="lg">
+              <Link href="/#architecture">{copy.ui.browseFlow}</Link>
+            </Button>
           </div>
-        </article>
 
-        <div className="enterprise-grid enterprise-grid-3">
-          {featuredMerchants.length === 0 ? (
-            <article className="enterprise-card enterprise-card-soft enterprise-card-wide">
-              <span className="enterprise-eyebrow">{copy.merchant.onboardingEyebrow}</span>
-              <h3 className="enterprise-card-title">{copy.merchant.onboardingTitle}</h3>
-              <p className="section-copy">{copy.merchant.onboardingDetail}</p>
-              <div className="enterprise-card-foot">
-                <span className="enterprise-metric">{copy.merchant.onboardingMetric}</span>
-                <Link href="/merchant/register" className="button-link">
-                  {copy.merchant.onboardingAction}
-                </Link>
+          <Separator className="my-3" />
+
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            {copy.trustCards.map((item) => (
+              <div key={item.label} className="space-y-1.5">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="text-3xl font-semibold tracking-tight">
+                  <CountUp value={item.value} />
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground/80">
+                  {item.detail}
+                </p>
               </div>
-            </article>
-          ) : (
-            featuredMerchants.map((merchant) => (
-              <article key={merchant.id} className="enterprise-card merchant-sample-card">
-                <span className="enterprise-eyebrow">{copy.merchant.sampleEyebrow}</span>
-                <h3 className="enterprise-card-title">{merchant.name}</h3>
-                <p className="section-copy">{copy.merchant.sampleDescription}</p>
+            ))}
+          </div>
+        </div>
 
-                <div className="merchant-stat-row">
-                  <span className="enterprise-metric">
-                    {language === "zh"
-                      ? `${merchant.paymentProfile.productCount} 个商品`
-                      : `${merchant.paymentProfile.productCount} products`}
+        <div className="flex flex-col gap-5">
+          <Card className="bg-card">
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                  {copy.hero.commandEyebrow}
+                </p>
+                <Badge
+                  variant="secondary"
+                  className="gap-1.5 border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300"
+                >
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
-                  <span className="enterprise-metric merchant-muted-metric">
-                    {language === "zh"
-                      ? `${merchant.paymentProfile.skuCount} 个 SKU`
-                      : `${merchant.paymentProfile.skuCount} SKUs`}
-                  </span>
+                  Live
+                </Badge>
+              </div>
+              <p className="text-sm font-medium leading-relaxed">
+                {copy.hero.commandTitle}
+              </p>
+
+              <div className="flex flex-col gap-3">
+                {copy.hero.commandStages.map((stage, index) => (
+                  <div
+                    key={stage.step}
+                    className={cn(
+                      "relative flex gap-3 rounded-lg border border-border/60 bg-muted/20 p-3 transition-colors hover:bg-primary/5",
+                      index === 0 && "border-primary/40 bg-primary/10",
+                    )}
+                  >
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-border/70 bg-background text-xs font-medium tabular-nums text-foreground">
+                      {stage.step}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                          {stage.label}
+                        </span>
+                        <code className="truncate font-mono text-[11px] text-foreground/80">
+                          {stage.value}
+                        </code>
+                      </div>
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {stage.detail}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-2 gap-3">
+            {copy.kpiCards.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg border border-border/60 bg-card p-4"
+              >
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-semibold tabular-nums">{item.value}</p>
+                <p className="mt-1 text-[11px] leading-snug text-muted-foreground/90">
+                  {item.detail}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CapabilitiesSection({ copy }: { copy: HomeCopy }) {
+  return (
+    <section id="capabilities" className="border-b border-border/60 bg-secondary/40">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <RevealOnScroll>
+          <SectionHeader
+            kicker={copy.sections.capabilities.kicker}
+            title={copy.sections.capabilities.title}
+            copy={copy.sections.capabilities.copy}
+          />
+        </RevealOnScroll>
+
+        <div className="mt-12 grid gap-5 sm:grid-cols-2">
+          {copy.capabilityCards.map((item, index) => {
+            const Icon = capabilityIcons[index] ?? Layers;
+            return (
+              <RevealOnScroll key={item.title} delay={index * 80}>
+                <SpotlightCard
+                  className="group flex h-full flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm"
+                  contentClassName="flex h-full flex-col gap-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-8 w-8 place-items-center rounded-md border border-primary/20 bg-primary/10 text-primary transition-transform duration-300 group-hover/spot:scale-110">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      {item.eyebrow}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-semibold tracking-tight">{item.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {item.description}
+                  </p>
+                  <p className="mt-auto rounded-md border border-dashed border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+                    {item.detail}
+                  </p>
+                </SpotlightCard>
+              </RevealOnScroll>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ArchitectureSection({ copy }: { copy: HomeCopy }) {
+  return (
+    <section id="architecture" className="border-b border-border/60 bg-background">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <RevealOnScroll>
+          <SectionHeader
+            kicker={copy.sections.architecture.kicker}
+            title={copy.sections.architecture.title}
+            copy={copy.sections.architecture.copy}
+          />
+        </RevealOnScroll>
+
+        <div className="relative mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {copy.flowSteps.map((item, index) => {
+            const Icon = flowIcons[index] ?? Workflow;
+            const isLast = index === copy.flowSteps.length - 1;
+            return (
+              <RevealOnScroll key={item.step} delay={index * 100}>
+                <div className="relative flex h-full flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/10">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs text-muted-foreground">{item.step}</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                      <Icon className="h-4 w-4" />
+                    </span>
+                  </div>
+                  <h3 className="text-base font-semibold tracking-tight">{item.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{item.copy}</p>
+                  {!isLast ? (
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 40 8"
+                      preserveAspectRatio="none"
+                      className="pointer-events-none absolute right-[-22px] top-1/2 hidden h-2 w-10 -translate-y-1/2 lg:block"
+                    >
+                      <line
+                        x1="0"
+                        y1="4"
+                        x2="40"
+                        y2="4"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeDasharray="4 4"
+                        className="animate-flow-dash stroke-primary/55"
+                      />
+                    </svg>
+                  ) : null}
                 </div>
+              </RevealOnScroll>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-                <div className="merchant-feature-list">
-                  {merchant.paymentProfile.featuredProducts.length > 0 ? (
-                    merchant.paymentProfile.featuredProducts.map((product) => (
-                      <Link
-                        key={product.id}
-                        href={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
-                        className="merchant-mini-chip"
-                      >
-                        {product.name}
-                      </Link>
-                    ))
-                  ) : (
-                    <span className="merchant-mini-chip">{copy.merchant.emptyChip}</span>
-                  )}
+function StoreNetworkSection({
+  copy,
+  featuredMerchants,
+  language,
+}: {
+  copy: HomeCopy;
+  featuredMerchants: FeaturedMerchant[];
+  language: SiteLanguage;
+}) {
+  return (
+    <section id="stores" className="border-b border-border/60 bg-secondary/40">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <RevealOnScroll>
+          <SectionHeader
+            kicker={copy.sections.stores.kicker}
+            title={copy.sections.stores.title}
+            copy={copy.sections.stores.copy}
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll delay={120}>
+          <Card className="mt-10 overflow-hidden border-primary/25 bg-card ring-0">
+            <CardContent className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] lg:items-center lg:p-8">
+              <div className="space-y-4">
+                <Badge
+                  variant="secondary"
+                  className="border-primary/25 bg-primary/10 text-primary hover:bg-primary/15"
+                >
+                  {copy.storeBanner.chip}
+                </Badge>
+                <h3 className="text-xl font-semibold leading-snug tracking-tight sm:text-2xl">
+                  {copy.storeBanner.title}
+                </h3>
+                <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                  {copy.storeBanner.copy}
+                </p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button asChild size="lg">
+                    <Link href={buildPlatformStorefrontPath()}>
+                      {copy.storeBanner.cta}
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="ghost">
+                    <Link href="/merchant/register">{copy.storeBanner.merchantCta}</Link>
+                  </Button>
                 </div>
+              </div>
 
-                <div className="enterprise-card-foot">
-                  <span className="small-copy">
-                    {copy.merchant.shopEntryLabel}: {buildMerchantStorefrontPath(merchant.id)}
+              <div className="grid grid-cols-3 gap-3 rounded-lg border border-border/70 bg-secondary/40 p-4">
+                {copy.storeBanner.stats.map((item) => (
+                  <div key={item.label} className="space-y-1 text-center">
+                    <p className="text-3xl font-semibold tabular-nums tracking-tight">
+                      <CountUp value={item.value} />
+                    </p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {item.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </RevealOnScroll>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {featuredMerchants.length === 0 ? (
+            <Card className="md:col-span-3 border-primary/20 bg-card">
+              <CardContent className="flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    {copy.merchant.onboardingEyebrow}
                   </span>
-                  <Link href={buildMerchantStorefrontPath(merchant.id)} className="button-link">
-                    {copy.merchant.visitStore}
+                  <h3 className="text-lg font-semibold tracking-tight">
+                    {copy.merchant.onboardingTitle}
+                  </h3>
+                  <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                    {copy.merchant.onboardingDetail}
+                  </p>
+                  <p className="text-xs text-muted-foreground/80">
+                    {copy.merchant.onboardingMetric}
+                  </p>
+                </div>
+                <Button asChild>
+                  <Link href="/merchant/register">
+                    {copy.merchant.onboardingAction}
+                    <ArrowRight className="ml-1 h-4 w-4" />
                   </Link>
-                </div>
-              </article>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            featuredMerchants.map((merchant, index) => (
+              <RevealOnScroll key={merchant.id} delay={index * 70}>
+                <Card className="h-full bg-card transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/10">
+                <CardContent className="flex h-full flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                      {copy.merchant.sampleEyebrow}
+                    </span>
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-base font-semibold tracking-tight">
+                      {merchant.name}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-muted-foreground">
+                      {copy.merchant.sampleDescription}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-md border border-border/70 bg-background px-2 py-1">
+                      {language === "zh"
+                        ? `${merchant.paymentProfile.productCount} 个商品`
+                        : `${merchant.paymentProfile.productCount} products`}
+                    </span>
+                    <span className="rounded-md border border-border/70 bg-background px-2 py-1">
+                      {language === "zh"
+                        ? `${merchant.paymentProfile.skuCount} 个 SKU`
+                        : `${merchant.paymentProfile.skuCount} SKUs`}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {merchant.paymentProfile.featuredProducts.length > 0 ? (
+                      merchant.paymentProfile.featuredProducts.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
+                          className="inline-flex items-center rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+                        >
+                          {product.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <span className="inline-flex items-center rounded-full border border-dashed border-border/70 px-2.5 py-1 text-xs text-muted-foreground">
+                        {copy.merchant.emptyChip}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-3 text-sm">
+                    <code className="truncate font-mono text-[11px] text-muted-foreground">
+                      {buildMerchantStorefrontPath(merchant.id)}
+                    </code>
+                    <Link
+                      href={buildMerchantStorefrontPath(merchant.id)}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    >
+                      {copy.merchant.visitStore}
+                      <ArrowUpRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </CardContent>
+                </Card>
+              </RevealOnScroll>
             ))
           )}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      <section className="section panel enterprise-preview-panel">
-        <div className="panel-header">
-          <span className="panel-icon">◎</span>
-          <h2 className="panel-title">{copy.preview.heading}</h2>
+function PreviewSection({
+  copy,
+  highlightedProducts,
+  keyword,
+  language,
+}: {
+  copy: HomeCopy;
+  highlightedProducts: HighlightedProduct[];
+  keyword: string;
+  language: SiteLanguage;
+}) {
+  const showEmptySearch = keyword && highlightedProducts.length === 0;
+  const showEmptyProducts = !keyword && highlightedProducts.length === 0;
+
+  return (
+    <section className="border-b border-border/60 bg-background">
+      <div className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+        <RevealOnScroll>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              <PackageSearch className="h-3.5 w-3.5" />
+              Preview
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+              {copy.preview.heading}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {copy.preview.intro}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={buildPlatformStorefrontPath()}>{copy.preview.viewFullStore}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/query">{copy.preview.orderQuery}</Link>
+            </Button>
+          </div>
         </div>
+        </RevealOnScroll>
 
-        <div className="panel-body">
-          <div className="enterprise-section-head compact">
-            <p className="section-copy enterprise-section-copy">{copy.preview.intro}</p>
-            <div className="button-row compact">
-              <Link href={buildPlatformStorefrontPath()} className="button-secondary">
+        {showEmptySearch || showEmptyProducts ? (
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-muted/30 px-6 py-16 text-center">
+            <span className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-background text-muted-foreground">
+              <PackageSearch className="h-5 w-5" />
+            </span>
+            <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+              {showEmptySearch ? copy.preview.emptySearch : copy.preview.emptyProducts}
+            </p>
+            <Button asChild size="sm" variant="outline">
+              <Link href={buildPlatformStorefrontPath()}>
                 {copy.preview.viewFullStore}
               </Link>
-              <Link href="/query" className="button-link">
-                {copy.preview.orderQuery}
-              </Link>
-            </div>
+            </Button>
           </div>
+        ) : (
+          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {highlightedProducts.map((product, index) => {
+              const primarySku = product.skus[0] ?? null;
+              const hasStock = product.stockAvailable > 0;
+              const modeLabel = getProductModeLabel(language, product.saleMode);
+              const metaCopy =
+                product.saleMode === "MULTI"
+                  ? product.skus
+                      .slice(0, 3)
+                      .map((sku) => sku.name)
+                      .join(" / ") || copy.ui.multiSkuMetaFallback
+                  : primarySku?.summary || product.summary || copy.ui.singleMetaFallback;
 
-          {keyword && highlightedProducts.length === 0 ? (
-            <div className="sub-panel">
-              <p className="empty-note">{copy.preview.emptySearch}</p>
-            </div>
-          ) : highlightedProducts.length === 0 ? (
-            <div className="sub-panel">
-              <p className="empty-note">{copy.preview.emptyProducts}</p>
-            </div>
-          ) : (
-            <div className="goods-grid">
-              {highlightedProducts.map((product) => {
-                const primarySku = product.skus[0] ?? null;
-                const hasStock = product.stockAvailable > 0;
-                const modeLabel = getProductModeLabel(language, product.saleMode);
-                const metaCopy =
-                  product.saleMode === "MULTI"
-                    ? product.skus
-                        .slice(0, 3)
-                        .map((sku) => sku.name)
-                        .join(" / ") || copy.ui.multiSkuMetaFallback
-                    : primarySku?.summary || product.summary || copy.ui.singleMetaFallback;
+              return (
+                <RevealOnScroll key={product.id} delay={index * 70}>
+                  <Card
+                    id={`product-${product.id}`}
+                    className="h-full overflow-hidden bg-card transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10"
+                  >
+                  <div className="flex aspect-[16/9] flex-col justify-between gap-2 border-b border-border/60 bg-gradient-to-br from-muted/40 to-muted/10 p-4">
+                    <span className="grid h-9 w-9 place-items-center rounded-md border border-border/70 bg-background text-sm font-semibold">
+                      {product.name.slice(0, 2)}
+                    </span>
+                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {product.summary || copy.ui.productSummaryFallback}
+                    </p>
+                  </div>
 
-                return (
-                  <article key={product.id} id={`product-${product.id}`} className="goods-card">
-                    <div>
-                      <div className="goods-thumb">
-                        <span className="goods-thumb-mark">{product.name.slice(0, 2)}</span>
-                        <p>{product.summary || copy.ui.productSummaryFallback}</p>
+                  <CardContent className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="rounded-md bg-primary px-2 py-0.5 text-xs font-medium tabular-nums text-primary-foreground">
+                        {formatCurrency(product.startingPriceCents, language)}
+                      </span>
+                      <Badge
+                        variant={hasStock ? "secondary" : "outline"}
+                        className={cn(
+                          "text-[10px] tracking-wide",
+                          !hasStock && "text-muted-foreground",
+                        )}
+                      >
+                        {getProductModeBadgeText(
+                          language,
+                          product.saleMode,
+                          product.skus.length,
+                          hasStock,
+                        )}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-1">
+                      <h3 className="text-base font-semibold tracking-tight">
+                        {product.name}
+                      </h3>
+                      <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                        {metaCopy}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs">
+                      <div className="space-y-0.5">
+                        <p className="text-muted-foreground">{copy.preview.stock}</p>
+                        <p className="text-sm font-semibold tabular-nums text-foreground">
+                          {product.stockAvailable}
+                        </p>
                       </div>
-                      <div className="goods-content">
-                        <div className="goods-head">
-                          <span className="price-chip">
-                            {formatCurrency(product.startingPriceCents, language)}
-                          </span>
-                          <span className={`badge ${hasStock ? "success" : "muted"}`}>
-                            {getProductModeBadgeText(language, product.saleMode, product.skus.length, hasStock)}
-                          </span>
-                        </div>
-                        <h3>{product.name}</h3>
-                        <p className="card-meta">{metaCopy}</p>
+                      <div className="space-y-0.5">
+                        <p className="text-muted-foreground">{copy.preview.productMode}</p>
+                        <p className="text-sm font-semibold text-foreground">{modeLabel}</p>
                       </div>
                     </div>
 
-                    <div className="goods-foot">
-                      <div className="data-row">
-                        <span className="data-key">{copy.preview.stock}</span>
-                        <strong>{product.stockAvailable}</strong>
-                      </div>
-                      <div className="data-row">
-                        <span className="data-key">{copy.preview.productMode}</span>
-                        <strong>{modeLabel}</strong>
-                      </div>
-
-                      <div className="button-row">
-                        <Link
-                          href={buildStorefrontProductPath(product.slug, product.ownerId)}
-                          className="button"
-                        >
-                          {product.saleMode === "MULTI" ? copy.ui.viewProduct : copy.ui.buyNow}
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
+                    <Button asChild className="w-full" disabled={!hasStock}>
+                      <Link
+                        href={buildStorefrontProductPath(product.slug, product.ownerId)}
+                      >
+                        {product.saleMode === "MULTI"
+                          ? copy.ui.viewProduct
+                          : copy.ui.buyNow}
+                        <ArrowRight className="ml-1 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+                </RevealOnScroll>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

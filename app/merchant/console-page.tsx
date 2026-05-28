@@ -22,10 +22,16 @@ function getSearchValue(value: MerchantConsoleSearchValue) {
 export async function MerchantConsolePage({
   currentTab,
   viewKey,
+  selectedProductId,
+  selectedSkuId,
+  returnToOverride,
   searchParams,
 }: {
   currentTab: MerchantTab;
   viewKey?: string;
+  selectedProductId?: string;
+  selectedSkuId?: string;
+  returnToOverride?: string;
   searchParams: MerchantConsoleSearchParams;
 }) {
   const merchant = await requireMerchantSession();
@@ -60,6 +66,15 @@ export async function MerchantConsolePage({
         })
       : [];
 
+  if (currentTab === "products" && selectedProductId && !dashboard.products.some((product) => product.id === selectedProductId)) {
+    redirect(
+      buildMerchantHref("products", {
+        success: normalizedSearch.success,
+        error: normalizedSearch.error ?? (normalizedSearch.success ? undefined : "商品不存在或已删除。"),
+      }),
+    );
+  }
+
   return (
     <MerchantConsoleView
       currentTab={currentTab}
@@ -71,6 +86,9 @@ export async function MerchantConsolePage({
       paymentProfileRevisions={paymentProfileRevisions}
       dashboard={dashboard}
       paymentOperations={paymentOperations}
+      selectedProductId={selectedProductId}
+      selectedSkuId={selectedSkuId}
+      productsReturnTo={returnToOverride ?? currentView.href}
     />
   );
 }

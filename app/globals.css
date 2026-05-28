@@ -34,13 +34,13 @@
   box-sizing: border-box;
 }
 
-html {
+html:not([data-shell="modern"]) {
   min-height: 100%;
   background:
     linear-gradient(180deg, #f7f9ff 0%, #eef2fb 100%);
 }
 
-body {
+html:not([data-shell="modern"]) body {
   margin: 0;
   color: var(--ink);
   font-family: var(--font-sans);
@@ -48,6 +48,10 @@ body {
     radial-gradient(circle at top left, rgba(255, 193, 220, 0.18), transparent 22%),
     radial-gradient(circle at top right, rgba(132, 163, 255, 0.18), transparent 26%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(238, 242, 251, 0.92));
+}
+
+html[data-shell="modern"] body {
+  margin: 0;
 }
 
 a {

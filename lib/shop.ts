@@ -27,16 +27,16 @@ import { decryptText, encryptText } from "@/lib/encryption";
 import { prisma } from "@/lib/prisma";
 import {
   formatCny,
-  generateOrderNo,
-  generateToken,
   normalizeEmail,
   parsePriceToCents,
   slugify,
 } from "@/lib/utils";
+import { generateOrderNo, generateToken } from "@/lib/server-utils";
 import { getEnv } from "@/lib/env";
 import { buildStorefrontPath, buildStorefrontProductPath } from "@/lib/storefront";
 import {
   MAX_PUBLIC_ORDER_QUANTITY,
+  formatSkuPricingTiersForForm,
   getSkuLowestUnitPriceCents,
   getSkuUnitPriceCents,
   serializeSkuPricingTiers,
@@ -3712,6 +3712,53 @@ export async function updateMerchantProduct(input: {
   });
 }
 
+export async function toggleMerchantProductStatus(input: {
+  merchantAccountId: string;
+  productId: string;
+}) {
+  const product = await prisma.product.findFirst({
+    where: {
+      id: input.productId,
+      paymentProfile: {
+        is: {
+          ownerId: input.merchantAccountId,
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      summary: true,
+      description: true,
+      saleMode: true,
+      status: true,
+    },
+  });
+
+  if (!product) {
+    throw new Error("你只能修改自己名下的商品。");
+  }
+
+  const nextStatus = product.status === ProductStatus.ACTIVE ? ProductStatus.DRAFT : ProductStatus.ACTIVE;
+
+  await updateMerchantProduct({
+    merchantAccountId: input.merchantAccountId,
+    productId: product.id,
+    name: product.name,
+    slugValue: product.slug,
+    summary: product.summary ?? "",
+    description: product.description ?? "",
+    saleMode: product.saleMode,
+    status: nextStatus,
+  });
+
+  return {
+    slug: product.slug,
+    status: nextStatus,
+  };
+}
+
 export async function createMerchantProductSku(input: {
   merchantAccountId: string;
   productId: string;
@@ -3818,6 +3865,58 @@ export async function updateMerchantProductSku(input: {
 
     await syncProductPriceCache(tx, sku.productId);
   });
+}
+
+export async function toggleMerchantProductSkuEnabled(input: {
+  merchantAccountId: string;
+  skuId: string;
+}) {
+  const sku = await prisma.productSku.findFirst({
+    where: {
+      id: input.skuId,
+      product: {
+        paymentProfile: {
+          is: {
+            ownerId: input.merchantAccountId,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      name: true,
+      summary: true,
+      priceCents: true,
+      pricingTiers: true,
+      enabled: true,
+      product: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
+
+  if (!sku) {
+    throw new Error("你只能修改自己名下商品的 SKU。");
+  }
+
+  const nextEnabled = !sku.enabled;
+
+  await updateMerchantProductSku({
+    merchantAccountId: input.merchantAccountId,
+    skuId: sku.id,
+    name: sku.name,
+    summary: sku.summary ?? "",
+    price: centsToAmount(sku.priceCents),
+    pricingTiers: formatSkuPricingTiersForForm(sku.pricingTiers),
+    enabled: nextEnabled,
+  });
+
+  return {
+    productSlug: sku.product.slug,
+    enabled: nextEnabled,
+  };
 }
 
 export async function deleteMerchantProduct(input: {
@@ -4017,6 +4116,48 @@ export async function updateProduct(input: {
   });
 }
 
+export async function toggleProductStatus(input: {
+  productId: string;
+}) {
+  const product = await prisma.product.findUnique({
+    where: {
+      id: input.productId,
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      summary: true,
+      description: true,
+      saleMode: true,
+      paymentProfileId: true,
+      status: true,
+    },
+  });
+
+  if (!product) {
+    throw new Error("商品不存在。");
+  }
+
+  const nextStatus = product.status === ProductStatus.ACTIVE ? ProductStatus.DRAFT : ProductStatus.ACTIVE;
+
+  await updateProduct({
+    productId: product.id,
+    name: product.name,
+    slugValue: product.slug,
+    summary: product.summary ?? "",
+    description: product.description ?? "",
+    saleMode: product.saleMode,
+    paymentProfileId: product.paymentProfileId ?? undefined,
+    status: nextStatus,
+  });
+
+  return {
+    slug: product.slug,
+    status: nextStatus,
+  };
+}
+
 export async function createProductSku(input: {
   productId: string;
   name: string;
@@ -4105,6 +4246,49 @@ export async function updateProductSku(input: {
 
     await syncProductPriceCache(tx, sku.productId);
   });
+}
+
+export async function toggleProductSkuEnabled(input: {
+  skuId: string;
+}) {
+  const sku = await prisma.productSku.findUnique({
+    where: {
+      id: input.skuId,
+    },
+    select: {
+      id: true,
+      name: true,
+      summary: true,
+      priceCents: true,
+      pricingTiers: true,
+      enabled: true,
+      product: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  });
+
+  if (!sku) {
+    throw new Error("SKU 不存在。");
+  }
+
+  const nextEnabled = !sku.enabled;
+
+  await updateProductSku({
+    skuId: sku.id,
+    name: sku.name,
+    summary: sku.summary ?? "",
+    price: centsToAmount(sku.priceCents),
+    pricingTiers: formatSkuPricingTiersForForm(sku.pricingTiers),
+    enabled: nextEnabled,
+  });
+
+  return {
+    productSlug: sku.product.slug,
+    enabled: nextEnabled,
+  };
 }
 
 export async function deleteProduct(input: {

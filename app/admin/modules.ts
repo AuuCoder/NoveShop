@@ -153,9 +153,14 @@ export const ADMIN_PAGE_SECTIONS: Record<AdminTab, readonly AdminPageSection[]> 
       description: "按 SKU 导入卡密，避免发错规格。",
     },
     {
+      id: "inventory-filters",
+      label: "库存筛选",
+      description: "按商户、商品和状态收紧视图范围。",
+    },
+    {
       id: "inventory-stock",
-      label: "库存视图",
-      description: "按商品和 SKU 查看实时余量。",
+      label: "SKU 台账",
+      description: "按商品、商户和 SKU 表格查看实时余量。",
     },
     {
       id: "inventory-ledger",
@@ -315,7 +320,7 @@ export const ADMIN_TAB_VIEWS: Record<AdminTab, readonly AdminTabView[]> = {
       label: "库存工作台",
       description: "导入卡密、查看库存并维护库存台账。",
       href: "/admin/inventory",
-      sectionIds: ["inventory-import", "inventory-stock", "inventory-ledger"],
+      sectionIds: ["inventory-import", "inventory-filters", "inventory-stock", "inventory-ledger"],
     },
   ],
   merchants: [

@@ -1,7 +1,8 @@
-import { randomBytes } from "node:crypto";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-export function cn(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(" ");
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
 export function formatCny(cents: number) {
@@ -44,19 +45,6 @@ export function slugify(raw: string) {
   }
 
   return normalized;
-}
-
-export function generateOrderNo() {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[-:TZ.]/g, "")
-    .slice(0, 14);
-
-  return `NS${timestamp}${randomBytes(3).toString("hex").toUpperCase()}`;
-}
-
-export function generateToken(length = 18) {
-  return randomBytes(length).toString("base64url");
 }
 
 export function maskCardSecret(secret: string) {

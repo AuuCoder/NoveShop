@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import "@/app/tailwind.css";
 import "@/app/globals.css";
-import { PublicFooter } from "@/app/public-footer";
-import { PublicHeader } from "@/app/public-header";
+import { SiteFooter } from "@/app/site-footer";
+import { SiteHeader } from "@/app/site-header";
 import { SitePreferencesProvider } from "@/app/ui-preferences";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "NoveShop | 企业级数字商品平台",
@@ -19,14 +24,15 @@ export default function RootLayout({
       lang="zh-CN"
       data-language="zh"
       data-theme="light"
-      suppressHydrationWarning
+      data-shell="modern"
+      suppressHydrationWarning className={cn("font-sans", geist.variable)}
     >
-      <body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         <SitePreferencesProvider>
-          <div className="site-shell">
-            <PublicHeader />
-            <main className="page-shell">{children}</main>
-            <PublicFooter />
+          <div className="flex min-h-screen flex-col">
+            <SiteHeader />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
           </div>
         </SitePreferencesProvider>
       </body>

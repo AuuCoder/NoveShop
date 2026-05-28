@@ -9,6 +9,7 @@ import { getEnv } from "@/lib/env";
 import {
   createMerchantAccount,
   deleteMerchantAccount,
+  getMerchantAccountById,
   resetMerchantAccountPassword,
   updateMerchantAccount,
 } from "@/lib/merchant-account";
@@ -28,7 +29,10 @@ import {
   rollbackPaymentProfileToRevision,
   savePaymentProfile,
 } from "@/lib/payment-profile";
-import { savePlatformStorefrontAnnouncement } from "@/lib/storefront-announcement";
+import {
+  getPlatformStorefrontAnnouncement,
+  savePlatformStorefrontAnnouncement,
+} from "@/lib/storefront-announcement";
 import {
   clearAvailableCardsForSku,
   createProduct,
@@ -40,6 +44,8 @@ import {
   replayWebhookEventLog,
   refreshOrderByPublicToken,
   runOrderSyncTask,
+  toggleProductSkuEnabled,
+  toggleProductStatus,
   updateCardItem,
   updateProduct,
   updateProductSku,
@@ -283,6 +289,29 @@ export async function updateProductAction(formData: FormData) {
   redirect(destination);
 }
 
+export async function toggleProductStatusAction(formData: FormData) {
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = returnTo;
+
+  try {
+    const product = await toggleProductStatus({
+      productId: String(formData.get("productId") ?? ""),
+    });
+
+    revalidateAdminSurface(product.slug);
+    destination = appendMessageToPath(
+      returnTo,
+      "success",
+      product.status === ProductStatus.ACTIVE ? "商品已一键上架。" : "商品已一键下架。",
+    );
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
 export async function createSkuAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
@@ -331,6 +360,29 @@ export async function updateSkuAction(formData: FormData) {
   redirect(destination);
 }
 
+export async function toggleSkuEnabledAction(formData: FormData) {
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = returnTo;
+
+  try {
+    const sku = await toggleProductSkuEnabled({
+      skuId: String(formData.get("skuId") ?? ""),
+    });
+
+    revalidateAdminSurface(sku.productSlug);
+    destination = appendMessageToPath(
+      returnTo,
+      "success",
+      sku.enabled ? "SKU 已一键启用。" : "SKU 已一键停用。",
+    );
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
 export async function deleteProductAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
@@ -372,7 +424,8 @@ export async function deleteSkuAction(formData: FormData) {
 export async function importCardsAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
-  let destination = buildAdminHref(tab, { success: "卡密已导入。" });
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "卡密已导入。");
 
   try {
     await importCards({
@@ -383,7 +436,7 @@ export async function importCardsAction(formData: FormData) {
 
     revalidateAdminSurface(productSlug);
   } catch (error) {
-    destination = buildAdminHref(tab, { error: getMessage(error) });
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
 
   redirect(destination);
@@ -392,7 +445,8 @@ export async function importCardsAction(formData: FormData) {
 export async function updateCardItemAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
-  let destination = buildAdminHref(tab, { success: "库存记录已更新。" });
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "库存记录已更新。");
 
   try {
     await updateCardItem({
@@ -403,7 +457,7 @@ export async function updateCardItemAction(formData: FormData) {
 
     revalidateAdminSurface(productSlug);
   } catch (error) {
-    destination = buildAdminHref(tab, { error: getMessage(error) });
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
 
   redirect(destination);
@@ -412,7 +466,8 @@ export async function updateCardItemAction(formData: FormData) {
 export async function deleteCardItemAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
-  let destination = buildAdminHref(tab, { success: "库存记录已删除。" });
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "库存记录已删除。");
 
   try {
     await deleteCardItem({
@@ -421,7 +476,7 @@ export async function deleteCardItemAction(formData: FormData) {
 
     revalidateAdminSurface(productSlug);
   } catch (error) {
-    destination = buildAdminHref(tab, { error: getMessage(error) });
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
 
   redirect(destination);
@@ -430,7 +485,8 @@ export async function deleteCardItemAction(formData: FormData) {
 export async function clearSkuInventoryAction(formData: FormData) {
   const productSlug = String(formData.get("productSlug") ?? "");
   const tab = parseAdminTab(formData.get("tab"));
-  let destination = buildAdminHref(tab, { success: "可售库存已清空。" });
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "可售库存已清空。");
 
   try {
     const result = await clearAvailableCardsForSku({
@@ -438,9 +494,9 @@ export async function clearSkuInventoryAction(formData: FormData) {
     });
 
     revalidateAdminSurface(productSlug);
-    destination = buildAdminHref(tab, { success: `已清空 ${result.clearedCount} 条可售库存。` });
+    destination = appendMessageToPath(returnTo, "success", `已清空 ${result.clearedCount} 条可售库存。`);
   } catch (error) {
-    destination = buildAdminHref(tab, { error: getMessage(error) });
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
 
   redirect(destination);
@@ -481,6 +537,38 @@ export async function updateMerchantAccountAction(formData: FormData) {
     });
 
     revalidateMerchantAdminSurface();
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function toggleMerchantAccountEnabledAction(formData: FormData) {
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = returnTo;
+
+  try {
+    const merchantAccount = await getMerchantAccountById(String(formData.get("merchantAccountId") ?? ""));
+
+    if (!merchantAccount) {
+      throw new Error("商户账号不存在。");
+    }
+
+    const updatedMerchant = await updateMerchantAccount({
+      merchantAccountId: merchantAccount.id,
+      name: merchantAccount.name,
+      email: merchantAccount.email,
+      isActive: !merchantAccount.isActive,
+    });
+
+    revalidateMerchantAdminSurface();
+    destination = appendMessageToPath(
+      returnTo,
+      "success",
+      updatedMerchant.isActive ? "商户账号已一键启用。" : "商户账号已一键停用。",
+    );
   } catch (error) {
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
@@ -537,6 +625,34 @@ export async function updatePlatformStorefrontAnnouncementAction(formData: FormD
 
     revalidatePath(buildPlatformStorefrontPath());
     revalidatePath("/store/platform/products/[slug]", "page");
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function togglePlatformStorefrontAnnouncementEnabledAction(formData: FormData) {
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = returnTo;
+
+  try {
+    await requireAdminSession();
+    const currentAnnouncement = await getPlatformStorefrontAnnouncement();
+    const nextAnnouncement = await savePlatformStorefrontAnnouncement({
+      enabled: !currentAnnouncement.enabled,
+      title: currentAnnouncement.title ?? "",
+      body: currentAnnouncement.body ?? "",
+    });
+
+    revalidatePath(buildPlatformStorefrontPath());
+    revalidatePath("/store/platform/products/[slug]", "page");
+    destination = appendMessageToPath(
+      returnTo,
+      "success",
+      nextAnnouncement.enabled ? "平台公告已一键启用。" : "平台公告已一键隐藏。",
+    );
   } catch (error) {
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
@@ -653,6 +769,127 @@ export async function updatePaymentProfileAction(formData: FormData) {
         },
       });
     }
+
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function togglePaymentProfileEnabledAction(formData: FormData) {
+  const adminActor = await getAdminAuditActor();
+  const paymentProfileId = String(formData.get("paymentProfileId") ?? "").trim();
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  const existing = await getPaymentProfileById(paymentProfileId);
+
+  if (!existing) {
+    redirect(appendMessageToPath(returnTo, "error", "支付商户不存在。"));
+  }
+
+  const beforeState = buildPaymentProfileAuditState(existing);
+  if (!beforeState) {
+    redirect(appendMessageToPath(returnTo, "error", "支付商户状态异常，暂时无法切换。"));
+  }
+  const nextIsActive = !existing.isActive;
+  const attemptedState = buildPaymentProfileAuditState({
+    ...existing,
+    isActive: nextIsActive,
+    isDefault: nextIsActive ? existing.isDefault : false,
+  }) ?? beforeState;
+  const changeSummary = nextIsActive ? "快捷启用 NovaPay 商户" : "快捷停用 NovaPay 商户";
+  const changeDetail = describePaymentProfileAuditChange({
+    before: beforeState,
+    after: attemptedState,
+    apiCredentialTouched: false,
+    notifySecretTouched: false,
+  });
+  const targetLabel = buildPaymentProfileAuditTargetLabel(existing);
+  let destination = returnTo;
+
+  try {
+    const profile = await savePaymentProfile({
+      paymentProfileId: existing.id,
+      name: existing.name,
+      merchantCode: existing.merchantCode,
+      apiKey: existing.apiKey,
+      apiSecret: existing.apiSecret,
+      notifySecret: existing.notifySecret ?? "",
+      defaultChannelCode: existing.defaultChannelCode,
+      enabledChannelCodes: existing.enabledChannelCodes,
+      isActive: nextIsActive,
+      isDefault: existing.isDefault,
+      revision: {
+        sourceScope: "ADMIN",
+        actorType: "ADMIN_ACCOUNT",
+        actorId: adminActor,
+        actorLabel: adminActor,
+        changeType: "UPDATE",
+        summary: changeSummary,
+      },
+    });
+
+    revalidatePaymentSurface();
+    revalidateAdminSurface();
+    revalidatePath("/products/[slug]", "page");
+
+    await captureControlAuditLog({
+      scope: "ADMIN",
+      actorType: "ADMIN_ACCOUNT",
+      actorId: adminActor,
+      actorLabel: adminActor,
+      merchantAccountId: profile.ownerId,
+      paymentProfileId: profile.id,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: resolvePaymentProfileAuditRisk({
+        before: beforeState,
+        after: attemptedState,
+        apiCredentialTouched: false,
+        notifySecretTouched: false,
+      }),
+      outcome: "SUCCEEDED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: profile.id,
+      targetLabel: buildPaymentProfileAuditTargetLabel(profile),
+      summary: changeSummary,
+      detail: changeDetail,
+      payload: {
+        before: beforeState,
+        after: buildPaymentProfileAuditState(profile) ?? attemptedState,
+      },
+    });
+
+    destination = appendMessageToPath(
+      returnTo,
+      "success",
+      profile.isActive ? "支付商户已一键启用。" : "支付商户已一键停用。",
+    );
+  } catch (error) {
+    await captureControlAuditLog({
+      scope: "ADMIN",
+      actorType: "ADMIN_ACCOUNT",
+      actorId: adminActor,
+      actorLabel: adminActor,
+      merchantAccountId: existing.ownerId,
+      paymentProfileId: existing.id,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: resolvePaymentProfileAuditRisk({
+        before: beforeState,
+        after: attemptedState,
+        apiCredentialTouched: false,
+        notifySecretTouched: false,
+      }),
+      outcome: "FAILED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: existing.id,
+      targetLabel,
+      summary: `${changeSummary}失败`,
+      detail: getMessage(error),
+      payload: {
+        before: beforeState,
+        attempted: attemptedState,
+      },
+    });
 
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }

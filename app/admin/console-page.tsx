@@ -18,10 +18,16 @@ function getSearchValue(value: AdminConsoleSearchValue) {
 export async function AdminConsolePage({
   currentTab,
   viewKey,
+  selectedProductId,
+  selectedSkuId,
+  returnToOverride,
   searchParams,
 }: {
   currentTab: AdminTab;
   viewKey?: string;
+  selectedProductId?: string;
+  selectedSkuId?: string;
+  returnToOverride?: string;
   searchParams: AdminConsoleSearchParams;
 }) {
   await requireAdminSession();
@@ -59,14 +65,20 @@ export async function AdminConsolePage({
         })
       : [];
 
+  if (currentTab === "products" && selectedProductId && !dashboard.products.some((product) => product.id === selectedProductId)) {
+    redirect(
+      buildAdminHref("products", {
+        success: normalizedSearch.success,
+        error: normalizedSearch.error ?? (normalizedSearch.success ? undefined : "商品不存在或已删除。"),
+      }),
+    );
+  }
+
   return (
     <AdminConsoleView
       currentTab={currentTab}
       currentView={currentView}
-      search={{
-        error: normalizedSearch.error,
-        success: normalizedSearch.success,
-      }}
+      search={normalizedSearch}
       env={env}
       dashboard={dashboard}
       merchantAccounts={merchantAccounts}
@@ -74,6 +86,9 @@ export async function AdminConsolePage({
       paymentProfileRevisions={paymentProfileRevisions}
       platformAnnouncement={platformAnnouncement}
       paymentOperations={paymentOperations}
+      selectedProductId={selectedProductId}
+      selectedSkuId={selectedSkuId}
+      productsReturnTo={returnToOverride ?? currentView.href}
     />
   );
 }
