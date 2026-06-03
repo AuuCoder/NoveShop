@@ -719,6 +719,21 @@ function AdminProductConfigurationArticle({
         </div>
       </div>
 
+      <div className="button-row compact">
+        <AdminQuickToggleForm
+          action={toggleProductStatusAction}
+          tab="products"
+          returnTo={returnTo}
+          fields={{ productId: product.id }}
+          active={product.status === ProductStatus.ACTIVE}
+          activeLabel="下架商品"
+          inactiveLabel="上架商品"
+        />
+        <Link href={storefrontPath} className="button-link">
+          打开前台页
+        </Link>
+      </div>
+
       <div className="admin-subsection">
         <div className="admin-subsection-head">
           <h3>商品总览</h3>
@@ -922,6 +937,15 @@ function AdminProductConfigurationArticle({
             <select name="saleMode" defaultValue={product.saleMode}>
               <option value={ProductSaleMode.SINGLE}>单商品</option>
               <option value={ProductSaleMode.MULTI}>多 SKU</option>
+            </select>
+          </div>
+
+          <div className="field">
+            <label>商品状态</label>
+            <select name="status" defaultValue={product.status}>
+              <option value={ProductStatus.DRAFT}>草稿</option>
+              <option value={ProductStatus.ACTIVE}>上架</option>
+              <option value={ProductStatus.ARCHIVED}>归档</option>
             </select>
           </div>
 
