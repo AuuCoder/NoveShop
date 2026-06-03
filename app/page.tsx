@@ -65,6 +65,7 @@ export default async function HomePage({
   const featuredMerchants = merchantStores.slice(0, 3).map((merchant) => ({
     id: merchant.id,
     name: merchant.name,
+    handle: merchant.slug ?? merchant.id,
     paymentProfile: {
       featuredProducts: merchant.paymentProfile.featuredProducts.map((product) => ({
         id: product.id,

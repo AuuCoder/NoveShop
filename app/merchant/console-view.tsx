@@ -1069,7 +1069,7 @@ function MerchantProductConfigurationArticle({
 }) {
   const singleModeSku = getSingleModePrimarySku(product);
   const selectedSku = getSelectedMerchantSku(product, selectedSkuId);
-  const storefrontPath = buildMerchantStorefrontProductPath(merchant.id, product.slug);
+  const storefrontPath = buildMerchantStorefrontProductPath(merchant.slug ?? merchant.id, product.slug);
   const paymentProfileLabel = paymentProfile ? `${paymentProfile.name} / ${paymentProfile.merchantCode}` : "未配置";
 
   return (
@@ -1647,7 +1647,7 @@ function ProductsSection({
   selectedProductId?: string;
   selectedSkuId?: string;
 }) {
-  const storefrontPath = buildMerchantStorefrontPath(merchant.id);
+  const storefrontPath = buildMerchantStorefrontPath(merchant.slug ?? merchant.id);
   const isDedicatedPage = Boolean(selectedProductId);
   const selectedProduct = selectedProductId
     ? dashboard.products.find((product) => product.id === selectedProductId) ?? null
@@ -3444,6 +3444,26 @@ function SettingsSection({
                   </div>
                 </div>
 
+                <div className="field">
+                  <label htmlFor="merchantSettingsSlug">店铺简称（短链接）</label>
+                  <input
+                    id="merchantSettingsSlug"
+                    name="slug"
+                    defaultValue={merchant.slug ?? ""}
+                    placeholder="例如 apple-shop"
+                    pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                    minLength={3}
+                    maxLength={32}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                  />
+                  <p className="small-copy">
+                    设置后店铺地址变为 <code>/s/{merchant.slug ?? "your-handle"}</code>
+                    ，比默认的长 ID 更好记。只能用小写字母、数字和连字符；留空则继续使用默认 ID 链接。原 ID 链接仍可访问。
+                  </p>
+                </div>
+
                 <div className="admin-stock-strip">
                   <div>
                     <span>注册时间</span>
@@ -3601,7 +3621,7 @@ function SettingsSection({
                   <button type="submit" className="button-secondary">
                     保存店铺公告
                   </button>
-                  <Link href={buildMerchantStorefrontPath(merchant.id)} className="button-link">
+                  <Link href={buildMerchantStorefrontPath(merchant.slug ?? merchant.id)} className="button-link">
                     查看我的店铺
                   </Link>
                 </div>

@@ -2452,11 +2452,11 @@ function MerchantsSection({
                       <div className="admin-merchant-meta-chip">
                         <span>店铺入口</span>
                         <strong>
-                          <Link href={buildStorefrontPath(merchant.id)} className="button-link">
+                          <Link href={buildStorefrontPath(merchant.slug ?? merchant.id)} className="button-link">
                             查看店铺
                           </Link>
                         </strong>
-                        <p className="small-copy">专属 `/s/{merchant.id}` 前台链接</p>
+                        <p className="small-copy">专属 `/s/{merchant.slug ?? merchant.id}` 前台链接</p>
                       </div>
                     </div>
 

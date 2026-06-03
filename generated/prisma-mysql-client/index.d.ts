@@ -2235,6 +2235,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     email: string | null
+    slug: string | null
     passwordHash: string | null
     isActive: boolean | null
     storeAnnouncementEnabled: boolean | null
@@ -2251,6 +2252,7 @@ export namespace Prisma {
     id: string | null
     name: string | null
     email: string | null
+    slug: string | null
     passwordHash: string | null
     isActive: boolean | null
     storeAnnouncementEnabled: boolean | null
@@ -2267,6 +2269,7 @@ export namespace Prisma {
     id: number
     name: number
     email: number
+    slug: number
     passwordHash: number
     isActive: number
     storeAnnouncementEnabled: number
@@ -2285,6 +2288,7 @@ export namespace Prisma {
     id?: true
     name?: true
     email?: true
+    slug?: true
     passwordHash?: true
     isActive?: true
     storeAnnouncementEnabled?: true
@@ -2301,6 +2305,7 @@ export namespace Prisma {
     id?: true
     name?: true
     email?: true
+    slug?: true
     passwordHash?: true
     isActive?: true
     storeAnnouncementEnabled?: true
@@ -2317,6 +2322,7 @@ export namespace Prisma {
     id?: true
     name?: true
     email?: true
+    slug?: true
     passwordHash?: true
     isActive?: true
     storeAnnouncementEnabled?: true
@@ -2406,6 +2412,7 @@ export namespace Prisma {
     id: string
     name: string
     email: string
+    slug: string | null
     passwordHash: string
     isActive: boolean
     storeAnnouncementEnabled: boolean
@@ -2439,6 +2446,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     email?: boolean
+    slug?: boolean
     passwordHash?: boolean
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -2460,6 +2468,7 @@ export namespace Prisma {
     id?: boolean
     name?: boolean
     email?: boolean
+    slug?: boolean
     passwordHash?: boolean
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -2472,7 +2481,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type MerchantAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "passwordHash" | "isActive" | "storeAnnouncementEnabled" | "storeAnnouncementTitle" | "storeAnnouncementBody" | "storeCoverImage" | "telegramSupportUrl" | "telegramGroupUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["merchantAccount"]>
+  export type MerchantAccountOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "email" | "slug" | "passwordHash" | "isActive" | "storeAnnouncementEnabled" | "storeAnnouncementTitle" | "storeAnnouncementBody" | "storeCoverImage" | "telegramSupportUrl" | "telegramGroupUrl" | "createdAt" | "updatedAt", ExtArgs["result"]["merchantAccount"]>
   export type MerchantAccountInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     paymentProfile?: boolean | MerchantAccount$paymentProfileArgs<ExtArgs>
     categories?: boolean | MerchantAccount$categoriesArgs<ExtArgs>
@@ -2489,6 +2498,7 @@ export namespace Prisma {
       id: string
       name: string
       email: string
+      slug: string | null
       passwordHash: string
       isActive: boolean
       storeAnnouncementEnabled: boolean
@@ -2873,6 +2883,7 @@ export namespace Prisma {
     readonly id: FieldRef<"MerchantAccount", 'String'>
     readonly name: FieldRef<"MerchantAccount", 'String'>
     readonly email: FieldRef<"MerchantAccount", 'String'>
+    readonly slug: FieldRef<"MerchantAccount", 'String'>
     readonly passwordHash: FieldRef<"MerchantAccount", 'String'>
     readonly isActive: FieldRef<"MerchantAccount", 'Boolean'>
     readonly storeAnnouncementEnabled: FieldRef<"MerchantAccount", 'Boolean'>
@@ -16341,6 +16352,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     email: 'email',
+    slug: 'slug',
     passwordHash: 'passwordHash',
     isActive: 'isActive',
     storeAnnouncementEnabled: 'storeAnnouncementEnabled',
@@ -16614,6 +16626,7 @@ export namespace Prisma {
     id: 'id',
     name: 'name',
     email: 'email',
+    slug: 'slug',
     passwordHash: 'passwordHash',
     storeAnnouncementTitle: 'storeAnnouncementTitle',
     storeAnnouncementBody: 'storeAnnouncementBody',
@@ -16902,6 +16915,7 @@ export namespace Prisma {
     id?: StringFilter<"MerchantAccount"> | string
     name?: StringFilter<"MerchantAccount"> | string
     email?: StringFilter<"MerchantAccount"> | string
+    slug?: StringNullableFilter<"MerchantAccount"> | string | null
     passwordHash?: StringFilter<"MerchantAccount"> | string
     isActive?: BoolFilter<"MerchantAccount"> | boolean
     storeAnnouncementEnabled?: BoolFilter<"MerchantAccount"> | boolean
@@ -16920,6 +16934,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    slug?: SortOrderInput | SortOrder
     passwordHash?: SortOrder
     isActive?: SortOrder
     storeAnnouncementEnabled?: SortOrder
@@ -16938,6 +16953,7 @@ export namespace Prisma {
   export type MerchantAccountWhereUniqueInput = Prisma.AtLeast<{
     id?: string
     email?: string
+    slug?: string
     AND?: MerchantAccountWhereInput | MerchantAccountWhereInput[]
     OR?: MerchantAccountWhereInput[]
     NOT?: MerchantAccountWhereInput | MerchantAccountWhereInput[]
@@ -16954,12 +16970,13 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"MerchantAccount"> | Date | string
     paymentProfile?: XOR<PaymentProfileNullableScalarRelationFilter, PaymentProfileWhereInput> | null
     categories?: CategoryListRelationFilter
-  }, "id" | "email">
+  }, "id" | "email" | "slug">
 
   export type MerchantAccountOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    slug?: SortOrderInput | SortOrder
     passwordHash?: SortOrder
     isActive?: SortOrder
     storeAnnouncementEnabled?: SortOrder
@@ -16982,6 +16999,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"MerchantAccount"> | string
     name?: StringWithAggregatesFilter<"MerchantAccount"> | string
     email?: StringWithAggregatesFilter<"MerchantAccount"> | string
+    slug?: StringNullableWithAggregatesFilter<"MerchantAccount"> | string | null
     passwordHash?: StringWithAggregatesFilter<"MerchantAccount"> | string
     isActive?: BoolWithAggregatesFilter<"MerchantAccount"> | boolean
     storeAnnouncementEnabled?: BoolWithAggregatesFilter<"MerchantAccount"> | boolean
@@ -18264,6 +18282,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -18282,6 +18301,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -18300,6 +18320,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -18318,6 +18339,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -18336,6 +18358,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -18352,6 +18375,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -18368,6 +18392,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -19846,11 +19871,6 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type BoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -19864,6 +19884,11 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     search?: string
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type BoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -19907,6 +19932,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    slug?: SortOrder
     passwordHash?: SortOrder
     isActive?: SortOrder
     storeAnnouncementEnabled?: SortOrder
@@ -19923,6 +19949,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    slug?: SortOrder
     passwordHash?: SortOrder
     isActive?: SortOrder
     storeAnnouncementEnabled?: SortOrder
@@ -19939,6 +19966,7 @@ export namespace Prisma {
     id?: SortOrder
     name?: SortOrder
     email?: SortOrder
+    slug?: SortOrder
     passwordHash?: SortOrder
     isActive?: SortOrder
     storeAnnouncementEnabled?: SortOrder
@@ -19969,14 +19997,6 @@ export namespace Prisma {
     _max?: NestedStringFilter<$PrismaModel>
   }
 
-  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -19993,6 +20013,14 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -21051,12 +21079,12 @@ export namespace Prisma {
     set?: string
   }
 
-  export type BoolFieldUpdateOperationsInput = {
-    set?: boolean
-  }
-
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+  }
+
+  export type BoolFieldUpdateOperationsInput = {
+    set?: boolean
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -21934,11 +21962,6 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
-  export type NestedBoolFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolFilter<$PrismaModel> | boolean
-  }
-
   export type NestedStringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -21952,6 +21975,11 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     search?: string
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedBoolFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolFilter<$PrismaModel> | boolean
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -21994,14 +22022,6 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
-  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
-    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedBoolFilter<$PrismaModel>
-    _max?: NestedBoolFilter<$PrismaModel>
-  }
-
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | null
@@ -22029,6 +22049,14 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
+  export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: boolean | BooleanFieldRefInput<$PrismaModel>
+    not?: NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedBoolFilter<$PrismaModel>
+    _max?: NestedBoolFilter<$PrismaModel>
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -22740,6 +22768,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -22757,6 +22786,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -22840,6 +22870,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -22857,6 +22888,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -23143,6 +23175,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -23160,6 +23193,7 @@ export namespace Prisma {
     id?: string
     name: string
     email: string
+    slug?: string | null
     passwordHash: string
     isActive?: boolean
     storeAnnouncementEnabled?: boolean
@@ -23347,6 +23381,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean
@@ -23364,6 +23399,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
+    slug?: NullableStringFieldUpdateOperationsInput | string | null
     passwordHash?: StringFieldUpdateOperationsInput | string
     isActive?: BoolFieldUpdateOperationsInput | boolean
     storeAnnouncementEnabled?: BoolFieldUpdateOperationsInput | boolean

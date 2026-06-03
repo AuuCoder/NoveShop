@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ProductDetailView } from "@/app/products/product-detail-view";
-import { getMerchantAccountWithProfileById } from "@/lib/merchant-account";
+import { getMerchantAccountWithProfileByHandleOrId } from "@/lib/merchant-account";
 import { getCheckoutChannelConfiguration } from "@/lib/payment-profile";
 import {
   getMerchantStorefrontAnnouncement,
@@ -62,16 +62,20 @@ export default async function MerchantStorefrontProductPage({
     );
   }
 
-  const [merchant, product] = await Promise.all([
-    getMerchantAccountWithProfileById(merchantId),
-    getMerchantStorefrontProductBySlug(merchantId, slug),
-  ]);
+  const merchant = await getMerchantAccountWithProfileByHandleOrId(merchantId);
 
-  if (!merchant || !merchant.isActive || !product) {
+  if (!merchant || !merchant.isActive) {
+    notFound();
+  }
+
+  const product = await getMerchantStorefrontProductBySlug(merchant.id, slug);
+
+  if (!product) {
     notFound();
   }
 
   const checkoutChannelConfig = await getCheckoutChannelConfiguration(product.paymentProfileId);
+  const storefrontHandle = merchant.slug ?? merchant.id;
 
   return (
     <ProductDetailView
@@ -84,9 +88,9 @@ export default async function MerchantStorefrontProductPage({
       announcement={getMerchantStorefrontAnnouncement(merchant)}
       contact={getMerchantStorefrontContact(merchant)}
       error={search.error}
-      backHref={buildMerchantStorefrontPath(merchant.id)}
+      backHref={buildMerchantStorefrontPath(storefrontHandle)}
       platformStore={false}
-      returnPath={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
+      returnPath={buildMerchantStorefrontProductPath(storefrontHandle, product.slug)}
       storefrontName={merchant.name}
     />
   );

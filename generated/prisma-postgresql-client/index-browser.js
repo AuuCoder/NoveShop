@@ -124,6 +124,7 @@ exports.Prisma.MerchantAccountScalarFieldEnum = {
   id: 'id',
   name: 'name',
   email: 'email',
+  slug: 'slug',
   passwordHash: 'passwordHash',
   isActive: 'isActive',
   storeAnnouncementEnabled: 'storeAnnouncementEnabled',

@@ -2,11 +2,13 @@ import type { Prisma } from "@prisma/client";
 import { ProductStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { normalizeMerchantHandle } from "@/lib/merchant-handle";
 
 const merchantAccountSelect = {
   id: true,
   name: true,
   email: true,
+  slug: true,
   isActive: true,
   storeAnnouncementEnabled: true,
   storeAnnouncementTitle: true,
@@ -44,6 +46,7 @@ export type MerchantAccountWithProfileSnapshot = Prisma.MerchantAccountGetPayloa
 const merchantStorefrontSelect = {
   id: true,
   name: true,
+  slug: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -165,6 +168,55 @@ export async function getMerchantAccountWithProfileById(merchantAccountId: strin
   });
 }
 
+/**
+ * Resolves a storefront identifier that may be either a short handle (slug) or
+ * the raw merchant id. Handles take precedence so renamed stores keep working,
+ * while old cuid-based links continue to resolve.
+ */
+export async function getMerchantAccountWithProfileByHandleOrId(identifier: string) {
+  const value = identifier.trim();
+
+  if (!value) {
+    return null;
+  }
+
+  const bySlug = await prisma.merchantAccount.findUnique({
+    where: {
+      slug: value,
+    },
+    select: merchantAccountWithProfileSelect,
+  });
+
+  if (bySlug) {
+    return bySlug;
+  }
+
+  return prisma.merchantAccount.findUnique({
+    where: {
+      id: value,
+    },
+    select: merchantAccountWithProfileSelect,
+  });
+}
+
+async function assertMerchantHandleAvailable(slug: string, merchantAccountId: string) {
+  const duplicate = await prisma.merchantAccount.findFirst({
+    where: {
+      slug,
+      id: {
+        not: merchantAccountId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (duplicate) {
+    throw new Error("这个店铺简称已经被其他商户使用，请换一个。");
+  }
+}
+
 export async function getMerchantAccountByEmail(emailInput: string) {
   const email = normalizeEmail(emailInput);
 
@@ -247,9 +299,11 @@ export async function updateMerchantSelfAccount(input: {
   merchantAccountId: string;
   name: string;
   email: string;
+  slug?: string | null;
 }) {
   const name = normalizeName(input.name);
   const email = normalizeEmail(input.email);
+  const slug = normalizeMerchantHandle(input.slug);
 
   const existing = await prisma.merchantAccount.findUnique({
     where: {
@@ -271,6 +325,10 @@ export async function updateMerchantSelfAccount(input: {
 
   await assertMerchantEmailAvailable(email, input.merchantAccountId);
 
+  if (slug) {
+    await assertMerchantHandleAvailable(slug, input.merchantAccountId);
+  }
+
   return prisma.merchantAccount.update({
     where: {
       id: input.merchantAccountId,
@@ -278,6 +336,7 @@ export async function updateMerchantSelfAccount(input: {
     data: {
       name,
       email,
+      slug,
     },
     select: merchantAccountSelect,
   });
@@ -475,6 +534,7 @@ export async function authenticateMerchantAccount(input: {
     id: account.id,
     name: account.name,
     email: account.email,
+    slug: account.slug,
     isActive: account.isActive,
     storeAnnouncementEnabled: account.storeAnnouncementEnabled,
     storeAnnouncementTitle: account.storeAnnouncementTitle,

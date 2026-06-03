@@ -1174,6 +1174,7 @@ export async function updateMerchantProfileAction(formData: FormData) {
       merchantAccountId: merchant.id,
       name: String(formData.get("name") ?? ""),
       email: String(formData.get("email") ?? ""),
+      slug: String(formData.get("slug") ?? ""),
     });
 
     await createMerchantSession({

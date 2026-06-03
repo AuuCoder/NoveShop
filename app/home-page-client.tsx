@@ -50,6 +50,7 @@ type HighlightedProduct = {
 type FeaturedMerchant = {
   id: string;
   name: string;
+  handle: string;
   paymentProfile: {
     productCount: number;
     skuCount: number;
@@ -996,7 +997,7 @@ function StoreNetworkSection({
                       merchant.paymentProfile.featuredProducts.map((product) => (
                         <Link
                           key={product.id}
-                          href={buildMerchantStorefrontProductPath(merchant.id, product.slug)}
+                          href={buildMerchantStorefrontProductPath(merchant.handle, product.slug)}
                           className="inline-flex items-center rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
                         >
                           {product.name}
@@ -1011,10 +1012,10 @@ function StoreNetworkSection({
 
                   <div className="mt-auto flex items-center justify-between border-t border-border/60 pt-3 text-sm">
                     <code className="truncate font-mono text-[11px] text-muted-foreground">
-                      {buildMerchantStorefrontPath(merchant.id)}
+                      {buildMerchantStorefrontPath(merchant.handle)}
                     </code>
                     <Link
-                      href={buildMerchantStorefrontPath(merchant.id)}
+                      href={buildMerchantStorefrontPath(merchant.handle)}
                       className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                     >
                       {copy.merchant.visitStore}

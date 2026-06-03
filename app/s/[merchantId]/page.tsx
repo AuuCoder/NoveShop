@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { StorefrontPageClient } from "@/app/storefront-page-client";
 import {
-  getMerchantAccountWithProfileById,
+  getMerchantAccountWithProfileByHandleOrId,
   listMerchantStorefronts,
 } from "@/lib/merchant-account";
 import {
@@ -28,20 +28,24 @@ export default async function MerchantStorefrontPage({
   const { merchantId } = await params;
   const search = await searchParams;
   const platformStore = isPlatformStorefrontId(merchantId);
-  const [merchant, products, merchantStores, platformAnnouncement, platformContact] =
-    await Promise.all([
-      platformStore ? Promise.resolve(null) : getMerchantAccountWithProfileById(merchantId),
-      platformStore ? listPlatformActiveProducts() : listActiveProductsByMerchant(merchantId),
-      listMerchantStorefronts(),
-      platformStore ? getPlatformStorefrontAnnouncement() : Promise.resolve(null),
-      platformStore ? getPlatformStorefrontContact() : Promise.resolve(null),
-    ]);
+
+  const merchant = platformStore
+    ? null
+    : await getMerchantAccountWithProfileByHandleOrId(merchantId);
 
   if (!platformStore && (!merchant || !merchant.isActive)) {
     notFound();
   }
 
-  const storefrontPath = buildStorefrontPath(platformStore ? null : merchant!.id);
+  const [products, merchantStores, platformAnnouncement, platformContact] = await Promise.all([
+    platformStore ? listPlatformActiveProducts() : listActiveProductsByMerchant(merchant!.id),
+    listMerchantStorefronts(),
+    platformStore ? getPlatformStorefrontAnnouncement() : Promise.resolve(null),
+    platformStore ? getPlatformStorefrontContact() : Promise.resolve(null),
+  ]);
+
+  const storefrontHandle = platformStore ? null : merchant!.slug ?? merchant!.id;
+  const storefrontPath = buildStorefrontPath(platformStore ? null : storefrontHandle);
   const announcement = platformStore
     ? platformAnnouncement
     : getMerchantStorefrontAnnouncement(merchant);
@@ -84,7 +88,7 @@ export default async function MerchantStorefrontPage({
     <StorefrontPageClient
       announcement={announcementSnapshot}
       contact={contact}
-      merchantId={merchantId}
+      merchantId={platformStore ? merchantId : storefrontHandle!}
       merchantName={merchant?.name ?? null}
       paymentProfileActive={platformStore ? true : Boolean(merchant?.paymentProfile?.isActive)}
       paymentProfileConfigured={platformStore ? true : Boolean(merchant?.paymentProfile)}
