@@ -11,7 +11,7 @@ coverage
 .env.local
 .env.*.local
 tsconfig.tsbuildinfo
-uploads/
+/uploads/
 
 # Local debug artifacts (DB dumps, one-off maintenance/decrypt scripts)
 backups/
