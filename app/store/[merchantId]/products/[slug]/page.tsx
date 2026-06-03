@@ -4,12 +4,16 @@ import { getMerchantAccountWithProfileById } from "@/lib/merchant-account";
 import { getCheckoutChannelConfiguration } from "@/lib/payment-profile";
 import {
   getMerchantStorefrontAnnouncement,
+  getMerchantStorefrontContact,
   getPlatformStorefrontAnnouncement,
+  getPlatformStorefrontContact,
 } from "@/lib/storefront-announcement";
 import {
   getMerchantStorefrontProductBySlug,
   getPlatformStorefrontProductBySlug,
 } from "@/lib/shop";
+import { parseStoredImageList } from "@/lib/uploads";
+import { parseContentBlocks } from "@/lib/content-blocks";
 import {
   buildMerchantStorefrontPath,
   buildMerchantStorefrontProductPath,
@@ -28,9 +32,10 @@ export default async function MerchantStorefrontProductPage({
   const { merchantId, slug } = await params;
   const search = await searchParams;
   if (isPlatformStorefrontId(merchantId)) {
-    const [product, announcement] = await Promise.all([
+    const [product, announcement, contact] = await Promise.all([
       getPlatformStorefrontProductBySlug(slug),
       getPlatformStorefrontAnnouncement(),
+      getPlatformStorefrontContact(),
     ]);
 
     if (!product) {
@@ -41,9 +46,14 @@ export default async function MerchantStorefrontProductPage({
 
     return (
       <ProductDetailView
-        product={product}
+        product={{
+          ...product,
+          detailImages: parseStoredImageList(product.detailImages),
+          contentBlocks: parseContentBlocks(product.contentBlocks),
+        }}
         checkoutChannelConfig={checkoutChannelConfig}
         announcement={announcement}
+        contact={contact}
         error={search.error}
         backHref={buildPlatformStorefrontPath()}
         platformStore
@@ -65,9 +75,14 @@ export default async function MerchantStorefrontProductPage({
 
   return (
     <ProductDetailView
-      product={product}
+      product={{
+        ...product,
+        detailImages: parseStoredImageList(product.detailImages),
+        contentBlocks: parseContentBlocks(product.contentBlocks),
+      }}
       checkoutChannelConfig={checkoutChannelConfig}
       announcement={getMerchantStorefrontAnnouncement(merchant)}
+      contact={getMerchantStorefrontContact(merchant)}
       error={search.error}
       backHref={buildMerchantStorefrontPath(merchant.id)}
       platformStore={false}

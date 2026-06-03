@@ -6,9 +6,12 @@ import {
 } from "@/lib/merchant-account";
 import {
   getMerchantStorefrontAnnouncement,
+  getMerchantStorefrontContact,
   getPlatformStorefrontAnnouncement,
+  getPlatformStorefrontContact,
 } from "@/lib/storefront-announcement";
 import { listActiveProductsByMerchant, listPlatformActiveProducts } from "@/lib/shop";
+import { getContentBlocksPlainText } from "@/lib/content-blocks";
 import {
   buildPlatformStorefrontPath,
   isPlatformStorefrontId,
@@ -25,12 +28,14 @@ export default async function MerchantStorefrontPage({
   const { merchantId } = await params;
   const search = await searchParams;
   const platformStore = isPlatformStorefrontId(merchantId);
-  const [merchant, products, merchantStores, platformAnnouncement] = await Promise.all([
-    platformStore ? Promise.resolve(null) : getMerchantAccountWithProfileById(merchantId),
-    platformStore ? listPlatformActiveProducts() : listActiveProductsByMerchant(merchantId),
-    listMerchantStorefronts(),
-    platformStore ? getPlatformStorefrontAnnouncement() : Promise.resolve(null),
-  ]);
+  const [merchant, products, merchantStores, platformAnnouncement, platformContact] =
+    await Promise.all([
+      platformStore ? Promise.resolve(null) : getMerchantAccountWithProfileById(merchantId),
+      platformStore ? listPlatformActiveProducts() : listActiveProductsByMerchant(merchantId),
+      listMerchantStorefronts(),
+      platformStore ? getPlatformStorefrontAnnouncement() : Promise.resolve(null),
+      platformStore ? getPlatformStorefrontContact() : Promise.resolve(null),
+    ]);
 
   if (!platformStore && (!merchant || !merchant.isActive)) {
     notFound();
@@ -48,15 +53,20 @@ export default async function MerchantStorefrontPage({
         updatedAt: announcement.updatedAt?.toISOString() ?? null,
       }
     : null;
+  const contact = platformStore ? platformContact : getMerchantStorefrontContact(merchant);
   const productSnapshots = products.map((product) => ({
-    description: product.description ?? null,
+    searchText: getContentBlocksPlainText(product),
     id: product.id,
     name: product.name,
     saleMode: product.saleMode,
     slug: product.slug,
+    coverImage: product.coverImage ?? null,
+    categoryId: product.categoryId ?? null,
+    categoryName: product.category?.name ?? null,
     startingPriceCents: product.startingPriceCents,
     stock: {
       available: product.stock.available,
+      sold: product.stock.sold,
     },
     summary: product.summary ?? null,
     skus: product.skus.map((sku) => ({
@@ -73,6 +83,7 @@ export default async function MerchantStorefrontPage({
   return (
     <StorefrontPageClient
       announcement={announcementSnapshot}
+      contact={contact}
       merchantId={merchantId}
       merchantName={merchant?.name ?? null}
       paymentProfileActive={platformStore ? true : Boolean(merchant?.paymentProfile?.isActive)}

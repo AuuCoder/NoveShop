@@ -32,6 +32,9 @@ import {
   slugify,
 } from "@/lib/utils";
 import { generateOrderNo, generateToken } from "@/lib/server-utils";
+import { normalizeStoredImagePath, serializeImageList } from "@/lib/uploads";
+import { resolveOwnedCategoryId, listCategoriesByOwner, type CategorySnapshot } from "@/lib/category";
+import { serializeContentBlocks } from "@/lib/content-blocks";
 import { getEnv } from "@/lib/env";
 import { buildStorefrontPath, buildStorefrontProductPath } from "@/lib/storefront";
 import {
@@ -89,6 +92,12 @@ type AdminDashboardRawProduct = Prisma.ProductGetPayload<{
   include: {
     paymentProfile: {
       select: typeof dashboardPaymentProfileSelect;
+    };
+    category: {
+      select: {
+        id: true;
+        name: true;
+      };
     };
     skus: true;
   };
@@ -148,6 +157,12 @@ const publicProductInclude = {
       ownerId: true,
       name: true,
       isActive: true,
+    },
+  },
+  category: {
+    select: {
+      id: true,
+      name: true,
     },
   },
   skus: {
@@ -3445,6 +3460,7 @@ export async function getMerchantDashboardData(merchantAccountId: string): Promi
   products: AdminDashboardProduct[];
   inventoryItems: InventoryCardItemSnapshot[];
   orders: AdminDashboardOrder[];
+  categories: CategorySnapshot[];
   stats: {
     productCount: number;
     activeCount: number;
@@ -3463,7 +3479,7 @@ export async function getMerchantDashboardData(merchantAccountId: string): Promi
 }> {
   await cleanupExpiredOrders();
 
-  const [products, inventoryItems, orders] = await Promise.all([
+  const [products, inventoryItems, orders, categories] = await Promise.all([
     prisma.product.findMany({
       where: {
         paymentProfile: {
@@ -3475,6 +3491,12 @@ export async function getMerchantDashboardData(merchantAccountId: string): Promi
       include: {
         paymentProfile: {
           select: dashboardPaymentProfileSelect,
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
         skus: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -3504,6 +3526,7 @@ export async function getMerchantDashboardData(merchantAccountId: string): Promi
       include: orderInclude,
       orderBy: [{ createdAt: "desc" }],
     }),
+    listCategoriesByOwner(merchantAccountId),
   ]);
 
   const hydratedProducts: AdminDashboardProduct[] = await hydrateProductsWithSkuStock(products);
@@ -3512,6 +3535,7 @@ export async function getMerchantDashboardData(merchantAccountId: string): Promi
     products: hydratedProducts,
     inventoryItems,
     orders: hydrateOrdersWithCardSecrets(orders),
+    categories,
     stats: {
       productCount: hydratedProducts.length,
       activeCount: hydratedProducts.filter((product) => product.status === ProductStatus.ACTIVE).length,
@@ -3538,6 +3562,7 @@ export async function getAdminDashboardData(): Promise<{
   products: AdminDashboardProduct[];
   inventoryItems: InventoryCardItemSnapshot[];
   orders: AdminDashboardOrder[];
+  categories: CategorySnapshot[];
   stats: {
     productCount: number;
     activeCount: number;
@@ -3549,11 +3574,17 @@ export async function getAdminDashboardData(): Promise<{
   };
 }> {
   await cleanupExpiredOrders();
-  const [products, inventoryItems, orders] = await Promise.all([
+  const [products, inventoryItems, orders, categories] = await Promise.all([
     prisma.product.findMany({
       include: {
         paymentProfile: {
           select: dashboardPaymentProfileSelect,
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
         skus: {
           orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -3567,6 +3598,7 @@ export async function getAdminDashboardData(): Promise<{
       orderBy: [{ createdAt: "desc" }],
       take: 24,
     }),
+    listCategoriesByOwner(null),
   ]);
 
   const hydratedProducts: AdminDashboardProduct[] = await hydrateProductsWithSkuStock(products);
@@ -3575,6 +3607,7 @@ export async function getAdminDashboardData(): Promise<{
     products: hydratedProducts,
     inventoryItems,
     orders: hydrateOrdersWithCardSecrets(orders),
+    categories,
     stats: {
       productCount: products.length,
       activeCount: products.filter((product) => product.status === ProductStatus.ACTIVE).length,
@@ -3597,6 +3630,10 @@ export async function createMerchantProduct(input: {
   description?: string;
   saleMode: ProductSaleMode;
   status: ProductStatus;
+  detailImages?: string;
+  contentBlocks?: string;
+  coverImage?: string;
+  categoryId?: string;
   initialSkuName?: string;
   initialSkuSummary?: string;
   initialSkuPrice: string;
@@ -3613,6 +3650,10 @@ export async function createMerchantProduct(input: {
   const skuPriceCents = parsePriceToCents(input.initialSkuPrice);
   const skuPricingTiers = serializeSkuPricingTiers(input.initialSkuPricingTiers);
   const saleMode = normalizeProductSaleMode(input.saleMode);
+  const detailImages = serializeImageList(input.detailImages);
+  const contentBlocks = serializeContentBlocks(input.contentBlocks);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const categoryId = await resolveOwnedCategoryId(input.categoryId, input.merchantAccountId);
   const paymentProfile = await requireMerchantOwnedPaymentProfileForProduct(
     input.merchantAccountId,
     input.status,
@@ -3627,9 +3668,13 @@ export async function createMerchantProduct(input: {
         slug,
         summary: input.summary?.trim() || null,
         description: input.description?.trim() || null,
+        detailImages,
+        contentBlocks,
+        coverImage,
         priceCents: getSkuLowestUnitPriceCents(skuPriceCents, skuPricingTiers),
         saleMode,
         paymentProfileId: paymentProfile.id,
+        categoryId,
         status: input.status,
       },
     });
@@ -3655,12 +3700,20 @@ export async function updateMerchantProduct(input: {
   slugValue?: string;
   summary?: string;
   description?: string;
+  detailImages?: string;
+  contentBlocks?: string;
+  coverImage?: string;
+  categoryId?: string;
   saleMode: ProductSaleMode;
   status: ProductStatus;
 }) {
   const name = input.name.trim();
   const slug = slugify(input.slugValue?.trim() || name);
   const saleMode = normalizeProductSaleMode(input.saleMode);
+  const detailImages = serializeImageList(input.detailImages);
+  const contentBlocks = serializeContentBlocks(input.contentBlocks);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const categoryId = await resolveOwnedCategoryId(input.categoryId, input.merchantAccountId);
   const paymentProfile = await requireMerchantOwnedPaymentProfileForProduct(
     input.merchantAccountId,
     input.status,
@@ -3702,8 +3755,12 @@ export async function updateMerchantProduct(input: {
       slug,
       summary: input.summary?.trim() || null,
       description: input.description?.trim() || null,
+      detailImages,
+      contentBlocks,
+      coverImage,
       saleMode,
       paymentProfileId: paymentProfile.id,
+      categoryId,
       status: input.status,
     },
     select: {
@@ -3731,6 +3788,10 @@ export async function toggleMerchantProductStatus(input: {
       slug: true,
       summary: true,
       description: true,
+      detailImages: true,
+      contentBlocks: true,
+      coverImage: true,
+      categoryId: true,
       saleMode: true,
       status: true,
     },
@@ -3749,6 +3810,10 @@ export async function toggleMerchantProductStatus(input: {
     slugValue: product.slug,
     summary: product.summary ?? "",
     description: product.description ?? "",
+    detailImages: product.detailImages ?? undefined,
+    contentBlocks: product.contentBlocks ?? undefined,
+    coverImage: product.coverImage ?? undefined,
+    categoryId: product.categoryId ?? undefined,
     saleMode: product.saleMode,
     status: nextStatus,
   });
@@ -4025,6 +4090,10 @@ export async function createProduct(input: {
   saleMode: ProductSaleMode;
   paymentProfileId?: string;
   status: ProductStatus;
+  detailImages?: string;
+  contentBlocks?: string;
+  coverImage?: string;
+  categoryId?: string;
   initialSkuName?: string;
   initialSkuSummary?: string;
   initialSkuPrice: string;
@@ -4041,6 +4110,10 @@ export async function createProduct(input: {
   const skuPriceCents = parsePriceToCents(input.initialSkuPrice);
   const skuPricingTiers = serializeSkuPricingTiers(input.initialSkuPricingTiers);
   const saleMode = normalizeProductSaleMode(input.saleMode);
+  const detailImages = serializeImageList(input.detailImages);
+  const contentBlocks = serializeContentBlocks(input.contentBlocks);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const categoryId = await resolveOwnedCategoryId(input.categoryId, null);
   const paymentProfileId = await resolvePaymentProfileId(input.paymentProfileId);
 
   await assertProductSlugAvailable({ slug });
@@ -4052,9 +4125,13 @@ export async function createProduct(input: {
         slug,
         summary: input.summary?.trim() || null,
         description: input.description?.trim() || null,
+        detailImages,
+        contentBlocks,
+        coverImage,
         priceCents: getSkuLowestUnitPriceCents(skuPriceCents, skuPricingTiers),
         saleMode,
         paymentProfileId,
+        categoryId,
         status: input.status,
       },
     });
@@ -4079,6 +4156,10 @@ export async function updateProduct(input: {
   slugValue?: string;
   summary?: string;
   description?: string;
+  detailImages?: string;
+  contentBlocks?: string;
+  coverImage?: string;
+  categoryId?: string;
   saleMode: ProductSaleMode;
   paymentProfileId?: string;
   status: ProductStatus;
@@ -4086,6 +4167,10 @@ export async function updateProduct(input: {
   const name = input.name.trim();
   const slug = slugify(input.slugValue?.trim() || name);
   const saleMode = normalizeProductSaleMode(input.saleMode);
+  const detailImages = serializeImageList(input.detailImages);
+  const contentBlocks = serializeContentBlocks(input.contentBlocks);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const categoryId = await resolveOwnedCategoryId(input.categoryId, null);
   const paymentProfileId = await resolvePaymentProfileId(input.paymentProfileId);
 
   if (!name) {
@@ -4106,8 +4191,12 @@ export async function updateProduct(input: {
       slug,
       summary: input.summary?.trim() || null,
       description: input.description?.trim() || null,
+      detailImages,
+      contentBlocks,
+      coverImage,
       saleMode,
       paymentProfileId,
+      categoryId,
       status: input.status,
     },
     select: {
@@ -4129,6 +4218,10 @@ export async function toggleProductStatus(input: {
       slug: true,
       summary: true,
       description: true,
+      detailImages: true,
+      contentBlocks: true,
+      coverImage: true,
+      categoryId: true,
       saleMode: true,
       paymentProfileId: true,
       status: true,
@@ -4147,6 +4240,10 @@ export async function toggleProductStatus(input: {
     slugValue: product.slug,
     summary: product.summary ?? "",
     description: product.description ?? "",
+    detailImages: product.detailImages ?? undefined,
+    contentBlocks: product.contentBlocks ?? undefined,
+    coverImage: product.coverImage ?? undefined,
+    categoryId: product.categoryId ?? undefined,
     saleMode: product.saleMode,
     paymentProfileId: product.paymentProfileId ?? undefined,
     status: nextStatus,

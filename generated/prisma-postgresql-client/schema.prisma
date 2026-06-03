@@ -57,9 +57,13 @@ model MerchantAccount {
   storeAnnouncementEnabled Boolean         @default(false)
   storeAnnouncementTitle   String?
   storeAnnouncementBody    String?
+  storeCoverImage          String?
+  telegramSupportUrl       String?
+  telegramGroupUrl         String?
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
   paymentProfile           PaymentProfile?
+  categories               Category[]
 
   @@index([isActive, createdAt])
 }
@@ -69,6 +73,9 @@ model PlatformStorefrontSettings {
   announcementEnabled Boolean  @default(false)
   announcementTitle   String?
   announcementBody    String?
+  coverImage          String?
+  telegramSupportUrl  String?
+  telegramGroupUrl    String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 }
@@ -79,10 +86,15 @@ model Product {
   slug             String          @unique
   summary          String?
   description      String?
+  detailImages     String?
+  contentBlocks    String?
+  coverImage       String?
   priceCents       Int
   saleMode         ProductSaleMode @default(SINGLE)
   paymentProfileId String?
   paymentProfile   PaymentProfile? @relation(fields: [paymentProfileId], references: [id], onDelete: SetNull)
+  categoryId       String?
+  category         Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   status           ProductStatus   @default(DRAFT)
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
@@ -92,6 +104,20 @@ model Product {
 
   @@index([status, createdAt])
   @@index([paymentProfileId, createdAt])
+  @@index([categoryId])
+}
+
+model Category {
+  id        String           @id @default(cuid())
+  ownerId   String?
+  owner     MerchantAccount? @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  products  Product[]
+
+  @@index([ownerId, sortOrder])
 }
 
 model ProductSku {

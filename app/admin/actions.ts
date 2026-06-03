@@ -31,6 +31,7 @@ import {
 } from "@/lib/payment-profile";
 import {
   getPlatformStorefrontAnnouncement,
+  getPlatformStorefrontContact,
   savePlatformStorefrontAnnouncement,
 } from "@/lib/storefront-announcement";
 import {
@@ -51,6 +52,11 @@ import {
   updateProductSku,
 } from "@/lib/shop";
 import { buildPlatformStorefrontPath, getStorefrontPathsForProduct } from "@/lib/storefront";
+import {
+  createCategory,
+  deleteCategory,
+  renameCategory,
+} from "@/lib/category";
 
 function getMessage(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
@@ -223,7 +229,7 @@ export async function loginAction(formData: FormData) {
   const env = getEnv();
 
   if (username !== env.adminUsername || !(await verifyAdminPassword(password, env))) {
-    redirect("/admin/login?error=账号或密码不正确。");
+    redirect(`/admin/login?error=${encodeURIComponent("账号或密码不正确。")}`);
   }
 
   await createAdminSession();
@@ -246,6 +252,10 @@ export async function createProductAction(formData: FormData) {
       slugValue: String(formData.get("slug") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       description: String(formData.get("description") ?? ""),
+      detailImages: String(formData.get("detailImages") ?? ""),
+      contentBlocks: String(formData.get("contentBlocks") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      categoryId: parseOptionalId(formData.get("categoryId")),
       saleMode: parseProductSaleMode(formData.get("saleMode")),
       paymentProfileId: parseOptionalId(formData.get("paymentProfileId")),
       status: parseProductStatus(formData.get("status")),
@@ -276,6 +286,10 @@ export async function updateProductAction(formData: FormData) {
       slugValue: String(formData.get("slug") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       description: String(formData.get("description") ?? ""),
+      detailImages: String(formData.get("detailImages") ?? ""),
+      contentBlocks: String(formData.get("contentBlocks") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      categoryId: parseOptionalId(formData.get("categoryId")),
       saleMode: parseProductSaleMode(formData.get("saleMode")),
       paymentProfileId: parseOptionalId(formData.get("paymentProfileId")),
       status: parseProductStatus(formData.get("status")),
@@ -305,6 +319,67 @@ export async function toggleProductStatusAction(formData: FormData) {
       "success",
       product.status === ProductStatus.ACTIVE ? "商品已一键上架。" : "商品已一键下架。",
     );
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function createCategoryAction(formData: FormData) {
+  await requireAdminSession();
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "分类已创建。");
+
+  try {
+    await createCategory({
+      ownerId: null,
+      name: String(formData.get("name") ?? ""),
+    });
+
+    revalidateAdminSurface();
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function renameCategoryAction(formData: FormData) {
+  await requireAdminSession();
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "分类已更新。");
+
+  try {
+    await renameCategory({
+      id: String(formData.get("categoryId") ?? ""),
+      ownerId: null,
+      name: String(formData.get("name") ?? ""),
+    });
+
+    revalidateAdminSurface();
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function deleteCategoryAction(formData: FormData) {
+  await requireAdminSession();
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = appendMessageToPath(returnTo, "success", "分类已删除，相关商品已变为未分类。");
+
+  try {
+    await deleteCategory({
+      id: String(formData.get("categoryId") ?? ""),
+      ownerId: null,
+    });
+
+    revalidateAdminSurface();
   } catch (error) {
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
@@ -621,6 +696,9 @@ export async function updatePlatformStorefrontAnnouncementAction(formData: FormD
       enabled: parseCheckbox(formData.get("enabled")),
       title: String(formData.get("title") ?? ""),
       body: String(formData.get("body") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      telegramSupportUrl: String(formData.get("telegramSupportUrl") ?? ""),
+      telegramGroupUrl: String(formData.get("telegramGroupUrl") ?? ""),
     });
 
     revalidatePath(buildPlatformStorefrontPath());
@@ -640,10 +718,14 @@ export async function togglePlatformStorefrontAnnouncementEnabledAction(formData
   try {
     await requireAdminSession();
     const currentAnnouncement = await getPlatformStorefrontAnnouncement();
+    const currentContact = await getPlatformStorefrontContact();
     const nextAnnouncement = await savePlatformStorefrontAnnouncement({
       enabled: !currentAnnouncement.enabled,
       title: currentAnnouncement.title ?? "",
       body: currentAnnouncement.body ?? "",
+      coverImage: currentContact.coverImage ?? "",
+      telegramSupportUrl: currentContact.telegramSupportUrl ?? "",
+      telegramGroupUrl: currentContact.telegramGroupUrl ?? "",
     });
 
     revalidatePath(buildPlatformStorefrontPath());

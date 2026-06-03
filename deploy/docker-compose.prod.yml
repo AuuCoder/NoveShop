@@ -55,6 +55,8 @@ services:
     command: npm run start
     ports:
       - "3001:3001"
+    volumes:
+      - noveshop-uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -71,3 +73,4 @@ services:
 
 volumes:
   noveshop-postgres-data:
+  noveshop-uploads:

@@ -53,6 +53,11 @@ import {
   buildMerchantStorefrontProductPath,
   getStorefrontPathsForProduct,
 } from "@/lib/storefront";
+import {
+  createCategory,
+  deleteCategory,
+  renameCategory,
+} from "@/lib/category";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { saveMerchantStorefrontAnnouncement } from "@/lib/storefront-announcement";
 
@@ -619,6 +624,10 @@ export async function createMerchantProductAction(formData: FormData) {
       slugValue: String(formData.get("slug") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       description: String(formData.get("description") ?? ""),
+      detailImages: String(formData.get("detailImages") ?? ""),
+      contentBlocks: String(formData.get("contentBlocks") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      categoryId: parseOptionalText(formData.get("categoryId")),
       saleMode: parseProductSaleMode(formData.get("saleMode")),
       status: parseProductStatus(formData.get("status")),
       initialSkuName: String(formData.get("initialSkuName") ?? ""),
@@ -648,6 +657,10 @@ export async function updateMerchantProductAction(formData: FormData) {
       slugValue: String(formData.get("slug") ?? ""),
       summary: String(formData.get("summary") ?? ""),
       description: String(formData.get("description") ?? ""),
+      detailImages: String(formData.get("detailImages") ?? ""),
+      contentBlocks: String(formData.get("contentBlocks") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      categoryId: parseOptionalText(formData.get("categoryId")),
       saleMode: parseProductSaleMode(formData.get("saleMode")),
       status: parseProductStatus(formData.get("status")),
     });
@@ -678,6 +691,67 @@ export async function toggleMerchantProductStatusAction(formData: FormData) {
         product.status === ProductStatus.ACTIVE ? "商品已一键上架。" : "商品已一键下架。",
       ),
     );
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
+export async function createMerchantCategoryAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const returnTo = normalizeMerchantConsoleReturnTo(
+    formData.get("returnTo"),
+    buildMerchantHref("products"),
+  );
+
+  try {
+    await createCategory({
+      ownerId: merchant.id,
+      name: String(formData.get("name") ?? ""),
+    });
+
+    revalidateMerchantSurface(merchant.id);
+    redirect(appendMessageToPath(returnTo, "success", "分类已创建。"));
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
+export async function renameMerchantCategoryAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const returnTo = normalizeMerchantConsoleReturnTo(
+    formData.get("returnTo"),
+    buildMerchantHref("products"),
+  );
+
+  try {
+    await renameCategory({
+      id: String(formData.get("categoryId") ?? ""),
+      ownerId: merchant.id,
+      name: String(formData.get("name") ?? ""),
+    });
+
+    revalidateMerchantSurface(merchant.id);
+    redirect(appendMessageToPath(returnTo, "success", "分类已更新。"));
+  } catch (error) {
+    redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
+  }
+}
+
+export async function deleteMerchantCategoryAction(formData: FormData) {
+  const merchant = await requireMerchantSession();
+  const returnTo = normalizeMerchantConsoleReturnTo(
+    formData.get("returnTo"),
+    buildMerchantHref("products"),
+  );
+
+  try {
+    await deleteCategory({
+      id: String(formData.get("categoryId") ?? ""),
+      ownerId: merchant.id,
+    });
+
+    revalidateMerchantSurface(merchant.id);
+    redirect(appendMessageToPath(returnTo, "success", "分类已删除，相关商品已变为未分类。"));
   } catch (error) {
     redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
   }
@@ -1144,6 +1218,9 @@ export async function updateMerchantStorefrontAnnouncementAction(formData: FormD
       enabled: parseCheckbox(formData.get("enabled")),
       title: String(formData.get("title") ?? ""),
       body: String(formData.get("body") ?? ""),
+      coverImage: String(formData.get("coverImage") ?? ""),
+      telegramSupportUrl: String(formData.get("telegramSupportUrl") ?? ""),
+      telegramGroupUrl: String(formData.get("telegramGroupUrl") ?? ""),
     });
 
     revalidateMerchantSurface(merchant.id);
@@ -1165,6 +1242,9 @@ export async function toggleMerchantStorefrontAnnouncementEnabledAction(formData
       enabled: !merchant.storeAnnouncementEnabled,
       title: merchant.storeAnnouncementTitle ?? "",
       body: merchant.storeAnnouncementBody ?? "",
+      coverImage: merchant.storeCoverImage ?? "",
+      telegramSupportUrl: merchant.telegramSupportUrl ?? "",
+      telegramGroupUrl: merchant.telegramGroupUrl ?? "",
     });
 
     revalidateMerchantSurface(merchant.id);
@@ -1197,7 +1277,7 @@ export async function deleteMerchantSelfAccountAction(formData: FormData) {
     revalidateMerchantSurface(merchant.id);
     revalidatePath("/merchant/login");
     revalidatePath("/merchant/register");
-    redirect("/merchant/register?success=商户账号已注销，可以重新注册新的商户。");
+    redirect(`/merchant/register?success=${encodeURIComponent("商户账号已注销，可以重新注册新的商户。")}`);
   } catch (error) {
     redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
   }

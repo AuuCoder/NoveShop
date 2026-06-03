@@ -11,6 +11,9 @@ const merchantAccountSelect = {
   storeAnnouncementEnabled: true,
   storeAnnouncementTitle: true,
   storeAnnouncementBody: true,
+  storeCoverImage: true,
+  telegramSupportUrl: true,
+  telegramGroupUrl: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.MerchantAccountSelect;
@@ -476,6 +479,9 @@ export async function authenticateMerchantAccount(input: {
     storeAnnouncementEnabled: account.storeAnnouncementEnabled,
     storeAnnouncementTitle: account.storeAnnouncementTitle,
     storeAnnouncementBody: account.storeAnnouncementBody,
+    storeCoverImage: account.storeCoverImage,
+    telegramSupportUrl: account.telegramSupportUrl,
+    telegramGroupUrl: account.telegramGroupUrl,
     createdAt: account.createdAt,
     updatedAt: account.updatedAt,
   } satisfies MerchantAccountSnapshot;

@@ -11,3 +11,9 @@ coverage
 .env.local
 .env.*.local
 tsconfig.tsbuildinfo
+uploads/
+
+# Local debug artifacts (DB dumps, one-off maintenance/decrypt scripts)
+backups/
+scripts/try-decrypt-keys.mjs
+scripts/fix-payment-profile.mjs

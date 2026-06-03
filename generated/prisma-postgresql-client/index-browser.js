@@ -129,6 +129,9 @@ exports.Prisma.MerchantAccountScalarFieldEnum = {
   storeAnnouncementEnabled: 'storeAnnouncementEnabled',
   storeAnnouncementTitle: 'storeAnnouncementTitle',
   storeAnnouncementBody: 'storeAnnouncementBody',
+  storeCoverImage: 'storeCoverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -138,6 +141,9 @@ exports.Prisma.PlatformStorefrontSettingsScalarFieldEnum = {
   announcementEnabled: 'announcementEnabled',
   announcementTitle: 'announcementTitle',
   announcementBody: 'announcementBody',
+  coverImage: 'coverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -148,10 +154,23 @@ exports.Prisma.ProductScalarFieldEnum = {
   slug: 'slug',
   summary: 'summary',
   description: 'description',
+  detailImages: 'detailImages',
+  contentBlocks: 'contentBlocks',
+  coverImage: 'coverImage',
   priceCents: 'priceCents',
   saleMode: 'saleMode',
   paymentProfileId: 'paymentProfileId',
+  categoryId: 'categoryId',
   status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  name: 'name',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -378,6 +397,7 @@ exports.Prisma.ModelName = {
   MerchantAccount: 'MerchantAccount',
   PlatformStorefrontSettings: 'PlatformStorefrontSettings',
   Product: 'Product',
+  Category: 'Category',
   ProductSku: 'ProductSku',
   PaymentProfile: 'PaymentProfile',
   ControlAuditLog: 'ControlAuditLog',

@@ -1,5 +1,6 @@
 import { ProductSaleMode } from "@prisma/client";
 import HomePageClient from "@/app/home-page-client";
+import { getContentBlocksPlainText } from "@/lib/content-blocks";
 import { listMerchantStorefronts } from "@/lib/merchant-account";
 import { listPlatformActiveProducts } from "@/lib/shop";
 
@@ -19,7 +20,7 @@ export default async function HomePage({
         [
           product.name,
           product.summary ?? "",
-          product.description ?? "",
+          getContentBlocksPlainText(product),
           ...product.skus.map((sku) => `${sku.name} ${sku.summary ?? ""}`),
         ]
           .join(" ")
@@ -49,6 +50,7 @@ export default async function HomePage({
     id: product.id,
     name: product.name,
     ownerId: product.paymentProfile?.ownerId ?? null,
+    coverImage: product.coverImage ?? null,
     saleMode: product.saleMode,
     skus: product.skus.map((sku) => ({
       id: sku.id,

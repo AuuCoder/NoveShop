@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   Megaphone,
   PackageSearch,
+  Send,
   Sparkles,
   Store,
 } from "lucide-react";
@@ -14,20 +15,26 @@ import { type SiteLanguage, useSitePreferences } from "@/app/ui-preferences";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { ProductCard, type ProductCardData, getProductCardCopy } from "@/app/components/product-card";
 import {
   buildMerchantStorefrontProductPath,
   buildPlatformProductPath,
 } from "@/lib/storefront";
 
 type StorefrontProductSnapshot = {
-  description: string | null;
+  searchText: string;
   id: string;
   name: string;
   saleMode: "MULTI" | "SINGLE";
   slug: string;
+  coverImage: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
   startingPriceCents: number;
   stock: {
     available: number;
+    sold: number;
   };
   summary: string | null;
   skus: Array<{
@@ -48,8 +55,15 @@ type StorefrontAnnouncementSnapshot = {
   updatedAt: string | null;
 };
 
+type StorefrontContactSnapshot = {
+  coverImage: string | null;
+  telegramSupportUrl: string | null;
+  telegramGroupUrl: string | null;
+};
+
 type StorefrontPageClientProps = {
   announcement: StorefrontAnnouncementSnapshot | null;
+  contact: StorefrontContactSnapshot | null;
   merchantId: string;
   merchantName: string | null;
   paymentProfileActive: boolean;
@@ -131,10 +145,12 @@ function getStorefrontCopy(
       announcementBadgePlatform: "Platform announcement",
       announcementFallback: "This storefront has announcement display enabled.",
       announcementTitleFallback: "Store announcement",
+      allCategories: "All",
       availableSkus: "Available SKUs",
       availableStock: "Available stock",
       backHome: "Back to homepage",
       clearFilter: "Clear filter",
+      contactHeading: "Need help?",
       ctaMulti: "Choose SKU",
       ctaSingle: "Buy now",
       disabledPaymentProfile:
@@ -162,6 +178,8 @@ function getStorefrontCopy(
       productSummarySingle: "A default direct-purchase item that works well for a lightweight digital storefront.",
       productTagUpdatedAt: "Updated",
       searchKeyword: "Current keyword",
+      telegramGroup: "After-sales group",
+      telegramSupport: "Telegram support",
       title: platformStore ? "Platform Official Store" : merchantName ?? "Merchant Store",
     };
   }
@@ -171,10 +189,12 @@ function getStorefrontCopy(
     announcementBadgePlatform: "平台公告",
     announcementFallback: "当前店铺已启用公告展示。",
     announcementTitleFallback: "店铺公告",
+    allCategories: "全部",
     availableSkus: "可购规格",
     availableStock: "可售库存",
     backHome: "返回首页",
     clearFilter: "清除筛选",
+    contactHeading: "需要帮助？",
     ctaMulti: "选择规格",
     ctaSingle: "立即购买",
     disabledPaymentProfile: "当前合作方的收款配置已停用，商品仍可展示，但暂时无法继续下单。",
@@ -196,12 +216,15 @@ function getStorefrontCopy(
     productSummarySingle: "默认规格直购，适合标准化数字商品交付。",
     productTagUpdatedAt: "更新于",
     searchKeyword: "当前关键词",
+    telegramGroup: "售后交流群",
+    telegramSupport: "Telegram 客服",
     title: platformStore ? "平台官方渠道" : merchantName ?? "合作方站点",
   };
 }
 
 export function StorefrontPageClient({
   announcement,
+  contact,
   merchantId,
   merchantName,
   paymentProfileActive,
@@ -214,29 +237,49 @@ export function StorefrontPageClient({
 }: StorefrontPageClientProps) {
   const { language } = useSitePreferences();
   const copy = getStorefrontCopy(language, platformStore, merchantName);
+  const productCardCopy = getProductCardCopy(language);
   const keyword = searchKeyword.trim();
   const normalizedKeyword = keyword.toLowerCase();
-  const filteredProducts = useMemo(
-    () =>
-      normalizedKeyword
-        ? products.filter((product) =>
-            matchesKeyword(
-              [
-                product.name,
-                product.summary ?? "",
-                product.description ?? "",
-                ...product.skus.map((sku) => `${sku.name} ${sku.summary ?? ""}`),
-              ],
-              normalizedKeyword,
-            ),
-          )
-        : products,
-    [normalizedKeyword, products],
-  );
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+
+  // 按出现顺序收集站内分类(只列实际挂在商品上的),用于筛选条。
+  const categories = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const product of products) {
+      if (product.categoryId && product.categoryName && !seen.has(product.categoryId)) {
+        seen.set(product.categoryId, product.categoryName);
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({ id, name }));
+  }, [products]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      if (activeCategoryId && product.categoryId !== activeCategoryId) {
+        return false;
+      }
+      if (!normalizedKeyword) {
+        return true;
+      }
+      return matchesKeyword(
+        [
+          product.name,
+          product.summary ?? "",
+          product.searchText,
+          ...product.skus.map((sku) => `${sku.name} ${sku.summary ?? ""}`),
+        ],
+        normalizedKeyword,
+      );
+    });
+  }, [activeCategoryId, normalizedKeyword, products]);
   const totalStock = products.reduce((sum, product) => sum + product.stock.available, 0);
   const totalSkuCount = products.reduce((sum, product) => sum + product.skus.length, 0);
   const updatedAtLabel = formatDateTime(announcement?.updatedAt ?? null, language);
   const showAnnouncement = hasStorefrontAnnouncement(announcement);
+  const coverImage = contact?.coverImage ?? null;
+  const telegramSupportUrl = contact?.telegramSupportUrl ?? null;
+  const telegramGroupUrl = contact?.telegramGroupUrl ?? null;
+  const showContactLinks = Boolean(telegramSupportUrl || telegramGroupUrl);
   const showMissingPayment = !platformStore && !paymentProfileConfigured;
   const showDisabledPayment =
     !platformStore && paymentProfileConfigured && !paymentProfileActive;
@@ -247,6 +290,15 @@ export function StorefrontPageClient({
     <div className="bg-background">
       <section className="border-b border-border/60">
         <div className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+          {coverImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverImage}
+              alt={copy.title}
+              className="mb-8 h-44 w-full rounded-lg border border-border/60 object-cover sm:h-56"
+              loading="lazy"
+            />
+          ) : null}
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
             <Store className="h-3.5 w-3.5" />
             {copy.kicker}
@@ -327,6 +379,32 @@ export function StorefrontPageClient({
           </Card>
         ) : null}
 
+        {showContactLinks ? (
+          <Card>
+            <CardContent className="flex flex-col gap-3">
+              <span className="text-sm font-medium tracking-tight">{copy.contactHeading}</span>
+              <div className="flex flex-wrap gap-2">
+                {telegramSupportUrl ? (
+                  <Button asChild variant="outline" size="sm">
+                    <a href={telegramSupportUrl} target="_blank" rel="noopener noreferrer">
+                      <Send className="mr-1 h-4 w-4" />
+                      {copy.telegramSupport}
+                    </a>
+                  </Button>
+                ) : null}
+                {telegramGroupUrl ? (
+                  <Button asChild variant="outline" size="sm">
+                    <a href={telegramGroupUrl} target="_blank" rel="noopener noreferrer">
+                      <Send className="mr-1 h-4 w-4" />
+                      {copy.telegramGroup}
+                    </a>
+                  </Button>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <div className="grid gap-3 sm:grid-cols-3">
           <StatCard label={copy.productCount} value={products.length} />
           <StatCard label={copy.availableSkus} value={totalSkuCount} />
@@ -351,6 +429,38 @@ export function StorefrontPageClient({
           ) : null}
         </div>
 
+        {categories.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveCategoryId(null)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium tracking-tight transition-colors",
+                activeCategoryId === null
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+              )}
+            >
+              {copy.allCategories}
+            </button>
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => setActiveCategoryId(category.id)}
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium tracking-tight transition-colors",
+                  activeCategoryId === category.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border/60 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                )}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {showEmptyCatalog ? (
           <div className="flex items-center justify-center rounded-md border border-dashed border-border/60 bg-muted/30 p-10 text-center text-sm text-muted-foreground">
             {copy.noProducts}
@@ -360,80 +470,29 @@ export function StorefrontPageClient({
             {copy.noResults}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {filteredProducts.map((product) => {
-              const primarySku = product.skus[0] ?? null;
-              const hasStock = product.stock.available > 0;
-              const modeLabel = getProductModeLabel(language, product.saleMode);
-              const modeBadgeText = getProductModeBadgeText(
-                language,
-                product.saleMode,
-                product.skus.length,
-                hasStock,
-              );
-              const metaCopy =
-                product.saleMode === "MULTI"
-                  ? product.skus
-                      .slice(0, 3)
-                      .map((sku) => sku.name)
-                      .join(" / ") || copy.productSummaryMulti
-                  : primarySku?.summary || product.summary || copy.productSummarySingle;
-              const productHref = platformStore
-                ? buildPlatformProductPath(product.slug)
-                : buildMerchantStorefrontProductPath(merchantId, product.slug);
+              const cardData: ProductCardData = {
+                id: product.id,
+                name: product.name,
+                href: platformStore
+                  ? buildPlatformProductPath(product.slug)
+                  : buildMerchantStorefrontProductPath(merchantId, product.slug),
+                coverImage: product.coverImage,
+                summary: product.summary,
+                startingPriceCents: product.startingPriceCents,
+                stockAvailable: product.stock.available,
+                sold: product.stock.sold,
+                saleMode: product.saleMode,
+              };
 
               return (
-                <Card key={product.id} id={`product-${product.id}`} className="h-full">
-                  <CardContent className="flex h-full flex-col gap-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <h3 className="text-base font-semibold tracking-tight">
-                          {product.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {metaCopy}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                          {language === "zh" ? "起售" : "From"}
-                        </p>
-                        <p className="text-base font-semibold tracking-tight">
-                          {formatCurrency(product.startingPriceCents, language)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant={hasStock ? "default" : "outline"}>
-                        {modeBadgeText}
-                      </Badge>
-                      <Badge variant="secondary">{modeLabel}</Badge>
-                    </div>
-
-                    <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3">
-                      {product.summary || copy.productFallback}
-                    </p>
-
-                    <div className="mt-auto flex items-center justify-between gap-3 pt-2">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>
-                          {copy.availableStock}{" "}
-                          <span className="font-medium text-foreground">
-                            {product.stock.available}
-                          </span>
-                        </span>
-                      </div>
-                      <Button asChild size="sm">
-                        <Link href={productHref}>
-                          {product.saleMode === "MULTI" ? copy.ctaMulti : copy.ctaSingle}
-                          <ArrowRight className="ml-1 h-4 w-4" />
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ProductCard
+                  key={product.id}
+                  product={cardData}
+                  language={language}
+                  copy={productCardCopy}
+                />
               );
             })}
           </div>

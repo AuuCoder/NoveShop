@@ -35,6 +35,7 @@ type HighlightedProduct = {
   name: string;
   slug: string;
   summary: string | null;
+  coverImage: string | null;
   saleMode: ProductSaleModeValue;
   skus: Array<{
     id: string;
@@ -1107,14 +1108,26 @@ function PreviewSection({
                     id={`product-${product.id}`}
                     className="h-full overflow-hidden bg-card transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10"
                   >
-                  <div className="flex aspect-[16/9] flex-col justify-between gap-2 border-b border-border/60 bg-gradient-to-br from-muted/40 to-muted/10 p-4">
-                    <span className="grid h-9 w-9 place-items-center rounded-md border border-border/70 bg-background text-sm font-semibold">
-                      {product.name.slice(0, 2)}
-                    </span>
-                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {product.summary || copy.ui.productSummaryFallback}
-                    </p>
-                  </div>
+                  {product.coverImage ? (
+                    <div className="relative aspect-[16/9] overflow-hidden border-b border-border/60 bg-muted/20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={product.coverImage}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex aspect-[16/9] flex-col justify-between gap-2 border-b border-border/60 bg-gradient-to-br from-muted/40 to-muted/10 p-4">
+                      <span className="grid h-9 w-9 place-items-center rounded-md border border-border/70 bg-background text-sm font-semibold">
+                        {product.name.slice(0, 2)}
+                      </span>
+                      <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                        {product.summary || copy.ui.productSummaryFallback}
+                      </p>
+                    </div>
+                  )}
 
                   <CardContent className="flex flex-col gap-4">
                     <div className="flex items-center justify-between">

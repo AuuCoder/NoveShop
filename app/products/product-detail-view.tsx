@@ -13,6 +13,7 @@ import {
   Minus,
   Package,
   Plus,
+  Send,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import type { ContentBlock } from "@/lib/content-blocks";
 import { buildPaymentChannelOptions, isUsdtPaymentChannelCode } from "@/lib/payment-channels";
 import {
   MAX_PUBLIC_ORDER_QUANTITY,
@@ -46,6 +48,8 @@ type ProductDetailSkuSnapshot = {
 
 type ProductDetailProductSnapshot = {
   description: string | null;
+  detailImages: string[];
+  contentBlocks: ContentBlock[];
   name: string;
   saleMode: "MULTI" | "SINGLE";
   slug: string;
@@ -62,6 +66,12 @@ type StorefrontAnnouncementSnapshot = {
   enabled: boolean;
   title: string | null;
   updatedAt: Date | string | null;
+};
+
+type StorefrontContactSnapshot = {
+  coverImage: string | null;
+  telegramSupportUrl: string | null;
+  telegramGroupUrl: string | null;
 };
 
 type StorefrontPaymentChannelOption = {
@@ -173,6 +183,10 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
       announcementHeading: "Store announcement",
       availableStock: "Available stock",
       backLabel: `Back to ${localizedStorefrontName}`,
+      contactHeading: "Need help?",
+      detailSectionHeading: "Product details",
+      telegramSupport: "Telegram support",
+      telegramGroup: "After-sales group",
       buyNow: "Buy now",
       channelCount: (count: number) =>
         count > 0
@@ -231,6 +245,10 @@ function getDetailCopy(language: SiteLanguage, platformStore: boolean, storefron
     announcementHeading: "店铺公告",
     availableStock: "可售库存",
     backLabel: `返回 ${localizedStorefrontName}`,
+    contactHeading: "需要帮助？",
+    detailSectionHeading: "商品详情",
+    telegramSupport: "Telegram 客服",
+    telegramGroup: "售后交流群",
     buyNow: "立即购买",
     channelCount: (count: number) =>
       count > 0 ? ` 当前支持 ${count} 种支付方式。` : " 当前暂未配置可用支付方式。",
@@ -320,6 +338,7 @@ export function ProductDetailView({
   product,
   checkoutChannelConfig,
   announcement,
+  contact,
   error,
   backHref,
   platformStore,
@@ -332,6 +351,7 @@ export function ProductDetailView({
     enabledChannelCodes: string[];
   } | null;
   announcement?: StorefrontAnnouncementSnapshot | null;
+  contact?: StorefrontContactSnapshot | null;
   error?: string;
   backHref: string;
   platformStore: boolean;
@@ -411,6 +431,12 @@ export function ProductDetailView({
         : "Platform Official Store"
       : storefrontName ?? (language === "zh" ? "当前店铺" : "Current Store");
   const showAnnouncement = hasStorefrontAnnouncement(announcement);
+  const detailImages = product.detailImages ?? [];
+  const contentBlocks = product.contentBlocks ?? [];
+  const hasContentBlocks = contentBlocks.length > 0;
+  const telegramSupportUrl = contact?.telegramSupportUrl ?? null;
+  const telegramGroupUrl = contact?.telegramGroupUrl ?? null;
+  const showContactLinks = Boolean(telegramSupportUrl || telegramGroupUrl);
   const productMark = product.name.slice(0, 2);
 
   return (
@@ -426,7 +452,9 @@ export function ProductDetailView({
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{storefrontLabelValue}</p>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            {product.description || product.summary || copy.missingDescription}
+            {hasContentBlocks
+              ? product.summary || copy.missingDescription
+              : product.description || product.summary || copy.missingDescription}
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -481,6 +509,32 @@ export function ProductDetailView({
                     {copy.announcementFallback}
                   </p>
                 )}
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {showContactLinks ? (
+            <Card>
+              <CardContent className="flex flex-col gap-3">
+                <span className="text-sm font-medium tracking-tight">{copy.contactHeading}</span>
+                <div className="flex flex-wrap gap-2">
+                  {telegramSupportUrl ? (
+                    <Button asChild variant="outline" size="sm">
+                      <a href={telegramSupportUrl} target="_blank" rel="noopener noreferrer">
+                        <Send className="mr-1 h-4 w-4" />
+                        {copy.telegramSupport}
+                      </a>
+                    </Button>
+                  ) : null}
+                  {telegramGroupUrl ? (
+                    <Button asChild variant="outline" size="sm">
+                      <a href={telegramGroupUrl} target="_blank" rel="noopener noreferrer">
+                        <Send className="mr-1 h-4 w-4" />
+                        {copy.telegramGroup}
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ) : null}
@@ -605,6 +659,53 @@ export function ProductDetailView({
               )}
             </CardContent>
           </Card>
+
+          {hasContentBlocks ? (
+            <Card>
+              <CardContent className="flex flex-col gap-3">
+                <span className="text-sm font-medium tracking-tight">{copy.detailSectionHeading}</span>
+                <div className="flex flex-col gap-4">
+                  {contentBlocks.map((block, index) =>
+                    block.type === "text" ? (
+                      <p
+                        key={`text-${index}`}
+                        className="text-sm leading-relaxed whitespace-pre-line text-foreground/90"
+                      >
+                        {block.text}
+                      </p>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={`image-${index}`}
+                        src={block.url}
+                        alt={`${product.name} ${index + 1}`}
+                        className="w-full rounded-md border border-border/60"
+                        loading="lazy"
+                      />
+                    ),
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : detailImages.length > 0 ? (
+            <Card>
+              <CardContent className="flex flex-col gap-3">
+                <span className="text-sm font-medium tracking-tight">{copy.detailSectionHeading}</span>
+                <div className="flex flex-col gap-3">
+                  {detailImages.map((image, index) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={`${image}-${index}`}
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full rounded-md border border-border/60"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
 
         <aside className="flex flex-col gap-6">

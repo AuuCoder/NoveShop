@@ -2,19 +2,27 @@ import Link from "next/link";
 import { CardItemStatus, ProductSaleMode, ProductStatus, ShopOrderStatus } from "@prisma/client";
 import { PaymentChannelConfigFields } from "@/app/payment-channel-config-fields";
 import { PaymentOperationsView } from "@/app/payment-operations-view";
+import { ImageUploadField } from "@/app/image-upload-field";
+import { CoverImageField } from "@/app/cover-image-field";
+import { ContentBlocksField } from "@/app/content-blocks-field";
+import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
+import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
 import {
   changeMerchantPasswordAction,
   clearMerchantSkuInventoryAction,
+  createMerchantCategoryAction,
   createMerchantProductAction,
   createMerchantSkuAction,
   deleteMerchantCardItemAction,
+  deleteMerchantCategoryAction,
   deleteMerchantPaymentProfileAction,
   deleteMerchantSelfAccountAction,
   deleteMerchantProductAction,
   deleteMerchantSkuAction,
   importMerchantCardsAction,
   logoutMerchantAction,
+  renameMerchantCategoryAction,
   rollbackMerchantPaymentProfileRevisionAction,
   saveMerchantPaymentProfileAction,
   toggleMerchantPaymentProfileEnabledAction,
@@ -59,6 +67,7 @@ import { formatDateTime, maskCardSecret } from "@/lib/utils";
 type MerchantDashboardData = Awaited<ReturnType<typeof getMerchantDashboardData>>;
 type MerchantProduct = MerchantDashboardData["products"][number];
 type MerchantOrder = MerchantDashboardData["orders"][number];
+type MerchantCategory = MerchantDashboardData["categories"][number];
 
 type DashboardCard = {
   label: string;
@@ -1047,12 +1056,14 @@ function MerchantProductConfigurationArticle({
   merchant,
   paymentProfile,
   product,
+  categories,
   returnTo,
   selectedSkuId,
 }: {
   merchant: MerchantAccountSnapshot;
   paymentProfile: PaymentProfileSnapshot | null;
   product: MerchantProduct;
+  categories: MerchantCategory[];
   returnTo?: string;
   selectedSkuId?: string;
 }) {
@@ -1160,7 +1171,7 @@ function MerchantProductConfigurationArticle({
               </tr>
               <tr>
                 <th>详情说明</th>
-                <td>{product.description?.trim() ? product.description : "未填写"}</td>
+                <td>{getContentBlocksPlainText(product) || "未填写"}</td>
               </tr>
             </tbody>
           </table>
@@ -1262,8 +1273,37 @@ function MerchantProductConfigurationArticle({
           </div>
 
           <div className="field">
-            <label>详情</label>
-            <textarea name="description" defaultValue={product.description ?? ""} />
+            <ContentBlocksField
+              name="contentBlocks"
+              label="商品详情(图文混排)"
+              hint="按顺序添加文字段落和图片,可上下调整顺序。展示在商品详情页。"
+              initialValue={buildEditorInitialValue({
+                contentBlocks: product.contentBlocks,
+                description: product.description,
+                detailImages: parseStoredImageList(product.detailImages),
+              })}
+            />
+          </div>
+
+          <div className="field">
+            <CoverImageField
+              name="coverImage"
+              label="商品封面图"
+              hint="展示在店铺列表卡片上,建议正方形。留空则用首字母占位。"
+              initialValue={product.coverImage}
+            />
+          </div>
+
+          <div className="field">
+            <label>商品分类</label>
+            <select name="categoryId" defaultValue={product.category?.id ?? ""}>
+              <option value="">未分类</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="field">
@@ -1518,6 +1558,74 @@ function MerchantProductConfigurationArticle({
   );
 }
 
+function MerchantCategoryManagerArticle({
+  categories,
+  returnTo,
+}: {
+  categories: MerchantCategory[];
+  returnTo?: string;
+}) {
+  return (
+    <article id="products-categories" className="admin-anchor-target admin-surface">
+      <div className="admin-section-head">
+        <div>
+          <p className="admin-section-kicker">Categories</p>
+          <h2 className="order-title">商品分类管理</h2>
+        </div>
+        <span className="badge muted">仅对我的店铺生效</span>
+      </div>
+
+      <form action={createMerchantCategoryAction} className="inline-form">
+        <MerchantTabInput tab="products" returnTo={returnTo} />
+        <div className="field">
+          <label htmlFor="new-category-name">新增分类</label>
+          <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
+        </div>
+        <button type="submit" className="button-secondary">
+          添加分类
+        </button>
+      </form>
+
+      {categories.length === 0 ? (
+        <div className="admin-empty-state">
+          <strong>还没有分类</strong>
+          <p>添加分类后,创建或编辑商品时即可归类,前台店铺页会出现分类筛选条。</p>
+        </div>
+      ) : (
+        <div className="table-wrap admin-table-wrap">
+          <table className="admin-detail-table">
+            <tbody>
+              {categories.map((category) => (
+                <tr key={category.id}>
+                  <td>
+                    <form action={renameMerchantCategoryAction} className="inline-form-row">
+                      <MerchantTabInput tab="products" returnTo={returnTo} />
+                      <input type="hidden" name="categoryId" value={category.id} />
+                      <input name="name" defaultValue={category.name} required />
+                      <button type="submit" className="button-link">
+                        重命名
+                      </button>
+                    </form>
+                  </td>
+                  <td className="admin-sku-summary-action">
+                    <form action={deleteMerchantCategoryAction} className="inline-form-row">
+                      <MerchantTabInput tab="products" returnTo={returnTo} />
+                      <input type="hidden" name="categoryId" value={category.id} />
+                      <button type="submit" formNoValidate className="button-link">
+                        删除
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </article>
+  );
+}
+
 function ProductsSection({
   merchant,
   paymentProfile,
@@ -1609,8 +1717,32 @@ function ProductsSection({
                   </div>
 
                   <div className="field">
-                    <label htmlFor="description">详情</label>
-                    <textarea id="description" name="description" placeholder="补充商品说明、发货规则、售后须知" />
+                    <ContentBlocksField
+                      name="contentBlocks"
+                      label="商品详情(图文混排)"
+                      hint="按顺序添加文字段落和图片,可上下调整顺序。展示在商品详情页。"
+                    />
+                  </div>
+
+                  <div className="field">
+                    <CoverImageField
+                      name="coverImage"
+                      label="商品封面图"
+                      hint="展示在店铺列表卡片上,建议正方形。留空则用首字母占位。"
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="categoryId">商品分类</label>
+                    <select id="categoryId" name="categoryId" defaultValue="">
+                      <option value="">未分类</option>
+                      {dashboard.categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="small-copy">前台店铺页顶部按分类筛选。可在下方「商品分类管理」里新增分类。</p>
                   </div>
 
                   <div className="admin-subsection">
@@ -1647,6 +1779,13 @@ function ProductsSection({
                 </form>
               )}
             </article>
+          ) : null}
+
+          {showCreate ? (
+            <MerchantCategoryManagerArticle
+              categories={dashboard.categories}
+              returnTo={returnTo}
+            />
           ) : null}
 
           {showSignals ? (
@@ -1721,6 +1860,7 @@ function ProductsSection({
                       merchant={merchant}
                       paymentProfile={paymentProfile}
                       product={selectedProduct}
+                      categories={dashboard.categories}
                       returnTo={returnTo}
                       selectedSkuId={selectedSkuId}
                     />
@@ -3411,6 +3551,35 @@ function SettingsSection({
                     defaultValue={merchant.storeAnnouncementBody ?? ""}
                     placeholder={"支持多行输入，例如：\n1. 本店商品付款后自动发货\n2. 大额订单请先联系客服确认库存"}
                     rows={5}
+                  />
+                </div>
+
+                <div className="field">
+                  <ImageUploadField
+                    name="coverImage"
+                    label="店铺封面图"
+                    hint="展示在店铺首页顶部，建议使用横版图片。"
+                    initialValue={merchant.storeCoverImage}
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="merchantTelegramSupportUrl">Telegram 客服链接</label>
+                  <input
+                    id="merchantTelegramSupportUrl"
+                    name="telegramSupportUrl"
+                    defaultValue={merchant.telegramSupportUrl ?? ""}
+                    placeholder="例如 https://t.me/your_support"
+                  />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="merchantTelegramGroupUrl">Telegram 售后群链接</label>
+                  <input
+                    id="merchantTelegramGroupUrl"
+                    name="telegramGroupUrl"
+                    defaultValue={merchant.telegramGroupUrl ?? ""}
+                    placeholder="例如 https://t.me/your_group"
                   />
                 </div>
 

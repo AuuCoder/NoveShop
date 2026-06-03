@@ -5,7 +5,12 @@ import { requireAdminSession } from "@/lib/admin-session";
 import { getEnv } from "@/lib/env";
 import { listMerchantAccounts } from "@/lib/merchant-account";
 import { listPaymentProfileRevisionSummaries, listPaymentProfiles } from "@/lib/payment-profile";
-import { EMPTY_STOREFRONT_ANNOUNCEMENT, getPlatformStorefrontAnnouncement } from "@/lib/storefront-announcement";
+import {
+  EMPTY_STOREFRONT_ANNOUNCEMENT,
+  EMPTY_STOREFRONT_CONTACT,
+  getPlatformStorefrontAnnouncement,
+  getPlatformStorefrontContact,
+} from "@/lib/storefront-announcement";
 import { getAdminDashboardData, getAdminPaymentOperationsData } from "@/lib/shop";
 
 type AdminConsoleSearchValue = string | string[] | undefined;
@@ -48,7 +53,7 @@ export async function AdminConsolePage({
 
   const env = getEnv();
   const currentView = getAdminTabView(currentTab, viewKey);
-  const [dashboard, paymentProfiles, merchantAccounts, paymentOperations, platformAnnouncement] = await Promise.all([
+  const [dashboard, paymentProfiles, merchantAccounts, paymentOperations, platformAnnouncement, platformContact] = await Promise.all([
     getAdminDashboardData(),
     listPaymentProfiles(),
     listMerchantAccounts(),
@@ -56,6 +61,9 @@ export async function AdminConsolePage({
     currentTab === "merchants"
       ? getPlatformStorefrontAnnouncement()
       : Promise.resolve(EMPTY_STOREFRONT_ANNOUNCEMENT),
+    currentTab === "merchants"
+      ? getPlatformStorefrontContact()
+      : Promise.resolve(EMPTY_STOREFRONT_CONTACT),
   ]);
   const paymentProfileRevisions =
     currentTab === "merchants" && paymentProfiles.length > 0
@@ -85,6 +93,7 @@ export async function AdminConsolePage({
       paymentProfiles={paymentProfiles}
       paymentProfileRevisions={paymentProfileRevisions}
       platformAnnouncement={platformAnnouncement}
+      platformContact={platformContact}
       paymentOperations={paymentOperations}
       selectedProductId={selectedProductId}
       selectedSkuId={selectedSkuId}

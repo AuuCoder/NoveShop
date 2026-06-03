@@ -120,5 +120,6 @@ export function getEnv() {
       (!enforceProductionEnv && hasLegacyEnvPaymentProfile),
     hasLegacyEnvPaymentProfile,
     defaultChannelCode: process.env.DEFAULT_CHANNEL_CODE ?? "alipay.page",
+    uploadDir: process.env.UPLOAD_DIR ?? "./uploads",
   };
 }

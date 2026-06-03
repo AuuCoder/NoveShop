@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { normalizeStoredImagePath, normalizeTelegramUrl } from "@/lib/uploads";
 
 const PLATFORM_STOREFRONT_SETTINGS_ID = "platform";
 
@@ -7,6 +8,9 @@ const platformStorefrontSettingsSelect = {
   announcementEnabled: true,
   announcementTitle: true,
   announcementBody: true,
+  coverImage: true,
+  telegramSupportUrl: true,
+  telegramGroupUrl: true,
   updatedAt: true,
 } satisfies Prisma.PlatformStorefrontSettingsSelect;
 
@@ -17,11 +21,23 @@ export type StorefrontAnnouncementSnapshot = {
   updatedAt: Date | null;
 };
 
+export type StorefrontContactSnapshot = {
+  coverImage: string | null;
+  telegramSupportUrl: string | null;
+  telegramGroupUrl: string | null;
+};
+
 type MerchantAnnouncementSource = {
   storeAnnouncementEnabled: boolean;
   storeAnnouncementTitle: string | null;
   storeAnnouncementBody: string | null;
   updatedAt: Date;
+};
+
+type MerchantContactSource = {
+  storeCoverImage: string | null;
+  telegramSupportUrl: string | null;
+  telegramGroupUrl: string | null;
 };
 
 function normalizeAnnouncementTitle(value: string) {
@@ -85,6 +101,16 @@ export const EMPTY_STOREFRONT_ANNOUNCEMENT = Object.freeze({
   updatedAt: null,
 }) satisfies StorefrontAnnouncementSnapshot;
 
+export const EMPTY_STOREFRONT_CONTACT = Object.freeze({
+  coverImage: null,
+  telegramSupportUrl: null,
+  telegramGroupUrl: null,
+}) satisfies StorefrontContactSnapshot;
+
+export function hasStorefrontContactLinks(contact: StorefrontContactSnapshot | null | undefined) {
+  return Boolean(contact && (contact.telegramSupportUrl || contact.telegramGroupUrl));
+}
+
 export function hasStorefrontAnnouncement(announcement: StorefrontAnnouncementSnapshot | null | undefined) {
   return Boolean(announcement?.enabled && (announcement.title || announcement.body));
 }
@@ -106,6 +132,43 @@ export function getMerchantStorefrontAnnouncement(
     body: merchant.storeAnnouncementBody,
     updatedAt: merchant.updatedAt,
   });
+}
+
+export function getMerchantStorefrontContact(
+  merchant: MerchantContactSource | null | undefined,
+): StorefrontContactSnapshot {
+  if (!merchant) {
+    return EMPTY_STOREFRONT_CONTACT;
+  }
+
+  return {
+    coverImage: merchant.storeCoverImage,
+    telegramSupportUrl: merchant.telegramSupportUrl,
+    telegramGroupUrl: merchant.telegramGroupUrl,
+  };
+}
+
+export async function getPlatformStorefrontContact(): Promise<StorefrontContactSnapshot> {
+  const settings = await prisma.platformStorefrontSettings.findUnique({
+    where: {
+      id: PLATFORM_STOREFRONT_SETTINGS_ID,
+    },
+    select: {
+      coverImage: true,
+      telegramSupportUrl: true,
+      telegramGroupUrl: true,
+    },
+  });
+
+  if (!settings) {
+    return EMPTY_STOREFRONT_CONTACT;
+  }
+
+  return {
+    coverImage: settings.coverImage,
+    telegramSupportUrl: settings.telegramSupportUrl,
+    telegramGroupUrl: settings.telegramGroupUrl,
+  };
 }
 
 export async function getPlatformStorefrontAnnouncement(): Promise<StorefrontAnnouncementSnapshot> {
@@ -132,8 +195,14 @@ export async function savePlatformStorefrontAnnouncement(input: {
   enabled?: boolean;
   title: string;
   body: string;
+  coverImage?: string;
+  telegramSupportUrl?: string;
+  telegramGroupUrl?: string;
 }): Promise<StorefrontAnnouncementSnapshot> {
   const normalized = normalizeAnnouncementInput(input);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const telegramSupportUrl = normalizeTelegramUrl(input.telegramSupportUrl);
+  const telegramGroupUrl = normalizeTelegramUrl(input.telegramGroupUrl);
 
   const settings = await prisma.platformStorefrontSettings.upsert({
     where: {
@@ -143,12 +212,18 @@ export async function savePlatformStorefrontAnnouncement(input: {
       announcementEnabled: normalized.enabled,
       announcementTitle: normalized.title,
       announcementBody: normalized.body,
+      coverImage,
+      telegramSupportUrl,
+      telegramGroupUrl,
     },
     create: {
       id: PLATFORM_STOREFRONT_SETTINGS_ID,
       announcementEnabled: normalized.enabled,
       announcementTitle: normalized.title,
       announcementBody: normalized.body,
+      coverImage,
+      telegramSupportUrl,
+      telegramGroupUrl,
     },
     select: platformStorefrontSettingsSelect,
   });
@@ -166,8 +241,14 @@ export async function saveMerchantStorefrontAnnouncement(input: {
   enabled?: boolean;
   title: string;
   body: string;
+  coverImage?: string;
+  telegramSupportUrl?: string;
+  telegramGroupUrl?: string;
 }): Promise<StorefrontAnnouncementSnapshot> {
   const normalized = normalizeAnnouncementInput(input);
+  const coverImage = normalizeStoredImagePath(input.coverImage);
+  const telegramSupportUrl = normalizeTelegramUrl(input.telegramSupportUrl);
+  const telegramGroupUrl = normalizeTelegramUrl(input.telegramGroupUrl);
 
   const merchant = await prisma.merchantAccount.update({
     where: {
@@ -177,6 +258,9 @@ export async function saveMerchantStorefrontAnnouncement(input: {
       storeAnnouncementEnabled: normalized.enabled,
       storeAnnouncementTitle: normalized.title,
       storeAnnouncementBody: normalized.body,
+      storeCoverImage: coverImage,
+      telegramSupportUrl,
+      telegramGroupUrl,
     },
     select: {
       storeAnnouncementEnabled: true,

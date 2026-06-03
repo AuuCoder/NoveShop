@@ -2,19 +2,27 @@ import Link from "next/link";
 import { CardItemStatus, ProductSaleMode, ProductStatus, ShopOrderStatus } from "@prisma/client";
 import { PaymentChannelConfigFields } from "@/app/payment-channel-config-fields";
 import { PaymentOperationsView } from "@/app/payment-operations-view";
+import { ImageUploadField } from "@/app/image-upload-field";
+import { CoverImageField } from "@/app/cover-image-field";
+import { ContentBlocksField } from "@/app/content-blocks-field";
+import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
+import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
 import {
   clearSkuInventoryAction,
+  createCategoryAction,
   createMerchantAccountAction,
   createProductAction,
   createSkuAction,
   deleteCardItemAction,
+  deleteCategoryAction,
   deleteMerchantAccountAction,
   deletePaymentProfileAction,
   deleteProductAction,
   deleteSkuAction,
   importCardsAction,
   logoutAction,
+  renameCategoryAction,
   resetMerchantAccountPasswordAction,
   rollbackPaymentProfileRevisionAction,
   toggleMerchantAccountEnabledAction,
@@ -47,6 +55,7 @@ import { describeSkuPricingTier, parseStoredSkuPricingTiers } from "@/lib/sku-pr
 import {
   hasStorefrontAnnouncement,
   type StorefrontAnnouncementSnapshot,
+  type StorefrontContactSnapshot,
 } from "@/lib/storefront-announcement";
 import {
   describeOrderAmount,
@@ -65,6 +74,7 @@ import { formatDateTime, maskCardSecret } from "@/lib/utils";
 type AdminDashboardData = Awaited<ReturnType<typeof getAdminDashboardData>>;
 type AdminProduct = AdminDashboardData["products"][number];
 type AdminOrder = AdminDashboardData["orders"][number];
+type AdminCategory = AdminDashboardData["categories"][number];
 
 function getProductStatusLabel(status: ProductStatus) {
   switch (status) {
@@ -279,6 +289,31 @@ function AdminQuickToggleForm({
         {active ? activeLabel : inactiveLabel}
       </button>
     </form>
+  );
+}
+
+// 用于已经位于某个 <form> 内部的场景：HTML 不允许 <form> 嵌套，所以这里只渲染一个
+// 通过 formAction 指向独立 action 的提交按钮，复用外层表单已有的隐藏字段（tab/returnTo/实体 id）。
+function AdminQuickToggleButton({
+  action,
+  active,
+  activeLabel,
+  inactiveLabel,
+}: {
+  action: AdminQuickAction;
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+}) {
+  return (
+    <button
+      type="submit"
+      formAction={action}
+      formNoValidate
+      className={`button-secondary admin-status-toggle-button ${active ? "is-active" : "is-inactive"}`}
+    >
+      {active ? activeLabel : inactiveLabel}
+    </button>
   );
 }
 
@@ -628,12 +663,14 @@ function AdminProductConfigurationArticle({
   product,
   paymentProfiles,
   defaultPaymentProfile,
+  categories,
   returnTo,
   selectedSkuId,
 }: {
   product: AdminProduct;
   paymentProfiles: PaymentProfileSnapshot[];
   defaultPaymentProfile: PaymentProfileSnapshot | null;
+  categories: AdminCategory[];
   returnTo?: string;
   selectedSkuId?: string;
 }) {
@@ -745,7 +782,7 @@ function AdminProductConfigurationArticle({
               </tr>
               <tr>
                 <th>详情说明</th>
-                <td>{product.description?.trim() ? product.description : "未填写"}</td>
+                <td>{getContentBlocksPlainText(product) || "未填写"}</td>
               </tr>
             </tbody>
           </table>
@@ -847,16 +884,36 @@ function AdminProductConfigurationArticle({
           </div>
 
           <div className="field">
-            <label>详情</label>
-            <textarea name="description" defaultValue={product.description ?? ""} />
+            <ContentBlocksField
+              name="contentBlocks"
+              label="商品详情(图文混排)"
+              hint="按顺序添加文字段落和图片,可上下调整顺序。展示在商品详情页。"
+              initialValue={buildEditorInitialValue({
+                contentBlocks: product.contentBlocks,
+                description: product.description,
+                detailImages: parseStoredImageList(product.detailImages),
+              })}
+            />
           </div>
 
           <div className="field">
-            <label>状态</label>
-            <select name="status" defaultValue={product.status}>
-              <option value={ProductStatus.DRAFT}>草稿</option>
-              <option value={ProductStatus.ACTIVE}>上架</option>
-              <option value={ProductStatus.ARCHIVED}>归档</option>
+            <CoverImageField
+              name="coverImage"
+              label="商品封面图"
+              hint="展示在店铺列表卡片上,建议正方形。留空则用首字母占位。"
+              initialValue={product.coverImage}
+            />
+          </div>
+
+          <div className="field">
+            <label>商品分类</label>
+            <select name="categoryId" defaultValue={product.category?.id ?? ""}>
+              <option value="">未分类</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -975,11 +1032,8 @@ function AdminProductConfigurationArticle({
                 </label>
 
                 <div className="button-row">
-                  <AdminQuickToggleForm
+                  <AdminQuickToggleButton
                     action={toggleSkuEnabledAction}
-                    tab="products"
-                    returnTo={returnTo}
-                    fields={{ skuId: selectedSku.id }}
                     active={selectedSku.enabled}
                     activeLabel="停用 SKU"
                     inactiveLabel="启用 SKU"
@@ -1082,11 +1136,8 @@ function AdminProductConfigurationArticle({
               </label>
 
               <div className="button-row">
-                <AdminQuickToggleForm
+                <AdminQuickToggleButton
                   action={toggleSkuEnabledAction}
-                  tab="products"
-                  returnTo={returnTo}
-                  fields={{ skuId: singleModeSku.id }}
                   active={singleModeSku.enabled}
                   activeLabel="停用默认规格"
                   inactiveLabel="启用默认规格"
@@ -1116,6 +1167,74 @@ function AdminProductConfigurationArticle({
           </div>
         )}
       </div>
+    </article>
+  );
+}
+
+function AdminCategoryManagerArticle({
+  categories,
+  returnTo,
+}: {
+  categories: AdminCategory[];
+  returnTo?: string;
+}) {
+  return (
+    <article id="products-categories" className="admin-anchor-target admin-surface">
+      <div className="admin-section-head">
+        <div>
+          <p className="admin-section-kicker">Categories</p>
+          <h2 className="order-title">商品分类管理</h2>
+        </div>
+        <span className="badge muted">官方店铺分类</span>
+      </div>
+
+      <form action={createCategoryAction} className="inline-form">
+        <AdminTabInput tab="products" returnTo={returnTo} />
+        <div className="field">
+          <label htmlFor="new-category-name">新增分类</label>
+          <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
+        </div>
+        <button type="submit" className="button-secondary">
+          添加分类
+        </button>
+      </form>
+
+      {categories.length === 0 ? (
+        <div className="admin-empty-state">
+          <strong>还没有分类</strong>
+          <p>添加分类后,创建或编辑商品时即可归类,前台店铺页会出现分类筛选条。</p>
+        </div>
+      ) : (
+        <div className="table-wrap admin-table-wrap">
+          <table className="admin-detail-table">
+            <tbody>
+              {categories.map((category) => (
+                <tr key={category.id}>
+                  <td>
+                    <form action={renameCategoryAction} className="inline-form-row">
+                      <AdminTabInput tab="products" returnTo={returnTo} />
+                      <input type="hidden" name="categoryId" value={category.id} />
+                      <input name="name" defaultValue={category.name} required />
+                      <button type="submit" className="button-link">
+                        重命名
+                      </button>
+                    </form>
+                  </td>
+                  <td className="admin-sku-summary-action">
+                    <form action={deleteCategoryAction} className="inline-form-row">
+                      <AdminTabInput tab="products" returnTo={returnTo} />
+                      <input type="hidden" name="categoryId" value={category.id} />
+                      <button type="submit" formNoValidate className="button-link">
+                        删除
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </article>
   );
 }
@@ -1210,8 +1329,32 @@ function ProductsSection({
               </div>
 
               <div className="field">
-                <label htmlFor="description">详情</label>
-                <textarea id="description" name="description" placeholder="补充商品说明、发货规则、售后须知" />
+                <ContentBlocksField
+                  name="contentBlocks"
+                  label="商品详情(图文混排)"
+                  hint="按顺序添加文字段落和图片,可上下调整顺序。展示在商品详情页。"
+                />
+              </div>
+
+              <div className="field">
+                <CoverImageField
+                  name="coverImage"
+                  label="商品封面图"
+                  hint="展示在店铺列表卡片上,建议正方形。留空则用首字母占位。"
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="categoryId">商品分类</label>
+                <select id="categoryId" name="categoryId" defaultValue="">
+                  <option value="">未分类</option>
+                  {dashboard.categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="small-copy">前台店铺页顶部按分类筛选。可在下方「商品分类管理」里新增分类。</p>
               </div>
 
               <div className="admin-subsection">
@@ -1247,6 +1390,8 @@ function ProductsSection({
               </button>
             </form>
           </article>
+
+          <AdminCategoryManagerArticle categories={dashboard.categories} returnTo={returnTo} />
         </div>
       ) : null}
 
@@ -1283,6 +1428,7 @@ function ProductsSection({
                     product={selectedProduct}
                     paymentProfiles={paymentProfiles}
                     defaultPaymentProfile={defaultPaymentProfile}
+                    categories={dashboard.categories}
                     returnTo={returnTo}
                     selectedSkuId={selectedSkuId}
                   />
@@ -1876,6 +2022,7 @@ function MerchantsSection({
   paymentProfileRevisions,
   defaultPaymentProfile,
   platformAnnouncement,
+  platformContact,
   returnTo,
   visibleSectionIds,
 }: {
@@ -1885,6 +2032,7 @@ function MerchantsSection({
   paymentProfileRevisions: PaymentProfileRevisionSummary[];
   defaultPaymentProfile: PaymentProfileSnapshot | null;
   platformAnnouncement: StorefrontAnnouncementSnapshot;
+  platformContact: StorefrontContactSnapshot;
   returnTo: string;
   visibleSectionIds?: readonly string[];
 }) {
@@ -2023,17 +2171,43 @@ function MerchantsSection({
               />
             </div>
 
+            <div className="field">
+              <ImageUploadField
+                name="coverImage"
+                label="店铺封面图"
+                hint="展示在店铺首页顶部，建议使用横版图片。"
+                initialValue={platformContact.coverImage}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="platformTelegramSupportUrl">Telegram 客服链接</label>
+              <input
+                id="platformTelegramSupportUrl"
+                name="telegramSupportUrl"
+                defaultValue={platformContact.telegramSupportUrl ?? ""}
+                placeholder="例如 https://t.me/your_support"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="platformTelegramGroupUrl">Telegram 售后群链接</label>
+              <input
+                id="platformTelegramGroupUrl"
+                name="telegramGroupUrl"
+                defaultValue={platformContact.telegramGroupUrl ?? ""}
+                placeholder="例如 https://t.me/your_group"
+              />
+            </div>
+
             <label className="admin-check-row">
               <input type="checkbox" name="enabled" defaultChecked={platformAnnouncement.enabled} />
               <span>在 `/store/platform` 和对应商品详情页展示公告</span>
             </label>
 
             <div className="button-row">
-              <AdminQuickToggleForm
+              <AdminQuickToggleButton
                 action={togglePlatformStorefrontAnnouncementEnabledAction}
-                tab="merchants"
-                returnTo={returnTo}
-                fields={{}}
                 active={platformAnnouncement.enabled}
                 activeLabel="隐藏公告"
                 inactiveLabel="展示公告"
@@ -2880,6 +3054,7 @@ export function AdminConsoleView({
   paymentProfiles,
   paymentProfileRevisions,
   platformAnnouncement,
+  platformContact,
   paymentOperations,
   selectedProductId,
   selectedSkuId,
@@ -2894,6 +3069,7 @@ export function AdminConsoleView({
   paymentProfiles: PaymentProfileSnapshot[];
   paymentProfileRevisions: PaymentProfileRevisionSummary[];
   platformAnnouncement: StorefrontAnnouncementSnapshot;
+  platformContact: StorefrontContactSnapshot;
   paymentOperations: PaymentOperationsData | null;
   selectedProductId?: string;
   selectedSkuId?: string;
@@ -3190,6 +3366,7 @@ export function AdminConsoleView({
             paymentProfileRevisions={paymentProfileRevisions}
             defaultPaymentProfile={defaultPaymentProfile}
             platformAnnouncement={platformAnnouncement}
+            platformContact={platformContact}
             returnTo={currentView.href}
             visibleSectionIds={currentView.sectionIds}
           />

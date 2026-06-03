@@ -129,6 +129,9 @@ exports.Prisma.MerchantAccountScalarFieldEnum = {
   storeAnnouncementEnabled: 'storeAnnouncementEnabled',
   storeAnnouncementTitle: 'storeAnnouncementTitle',
   storeAnnouncementBody: 'storeAnnouncementBody',
+  storeCoverImage: 'storeCoverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -138,6 +141,9 @@ exports.Prisma.PlatformStorefrontSettingsScalarFieldEnum = {
   announcementEnabled: 'announcementEnabled',
   announcementTitle: 'announcementTitle',
   announcementBody: 'announcementBody',
+  coverImage: 'coverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -148,10 +154,23 @@ exports.Prisma.ProductScalarFieldEnum = {
   slug: 'slug',
   summary: 'summary',
   description: 'description',
+  detailImages: 'detailImages',
+  contentBlocks: 'contentBlocks',
+  coverImage: 'coverImage',
   priceCents: 'priceCents',
   saleMode: 'saleMode',
   paymentProfileId: 'paymentProfileId',
+  categoryId: 'categoryId',
   status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.CategoryScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  name: 'name',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -335,13 +354,19 @@ exports.Prisma.MerchantAccountOrderByRelevanceFieldEnum = {
   email: 'email',
   passwordHash: 'passwordHash',
   storeAnnouncementTitle: 'storeAnnouncementTitle',
-  storeAnnouncementBody: 'storeAnnouncementBody'
+  storeAnnouncementBody: 'storeAnnouncementBody',
+  storeCoverImage: 'storeCoverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl'
 };
 
 exports.Prisma.PlatformStorefrontSettingsOrderByRelevanceFieldEnum = {
   id: 'id',
   announcementTitle: 'announcementTitle',
-  announcementBody: 'announcementBody'
+  announcementBody: 'announcementBody',
+  coverImage: 'coverImage',
+  telegramSupportUrl: 'telegramSupportUrl',
+  telegramGroupUrl: 'telegramGroupUrl'
 };
 
 exports.Prisma.ProductOrderByRelevanceFieldEnum = {
@@ -350,7 +375,17 @@ exports.Prisma.ProductOrderByRelevanceFieldEnum = {
   slug: 'slug',
   summary: 'summary',
   description: 'description',
-  paymentProfileId: 'paymentProfileId'
+  detailImages: 'detailImages',
+  contentBlocks: 'contentBlocks',
+  coverImage: 'coverImage',
+  paymentProfileId: 'paymentProfileId',
+  categoryId: 'categoryId'
+};
+
+exports.Prisma.CategoryOrderByRelevanceFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  name: 'name'
 };
 
 exports.Prisma.ProductSkuOrderByRelevanceFieldEnum = {
@@ -518,6 +553,7 @@ exports.Prisma.ModelName = {
   MerchantAccount: 'MerchantAccount',
   PlatformStorefrontSettings: 'PlatformStorefrontSettings',
   Product: 'Product',
+  Category: 'Category',
   ProductSku: 'ProductSku',
   PaymentProfile: 'PaymentProfile',
   ControlAuditLog: 'ControlAuditLog',

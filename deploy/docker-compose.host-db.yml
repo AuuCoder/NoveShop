@@ -36,6 +36,8 @@ services:
       - "host.docker.internal:host-gateway"
     ports:
       - "3001:3001"
+    volumes:
+      - noveshop-uploads:/app/uploads
     restart: unless-stopped
     healthcheck:
       test:
@@ -46,3 +48,6 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+
+volumes:
+  noveshop-uploads:
