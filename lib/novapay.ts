@@ -144,6 +144,78 @@ export async function createNovaPayOrder(input: {
   );
 }
 
+interface NovaPayInstalledChannelsResponse {
+  merchantCode?: string;
+  channelCodes?: string[];
+  channels?: Array<{ code: string }>;
+}
+
+/**
+ * 查询某商户在 NovaPay 实际"已安装且启用"的支付渠道编码。
+ * 用 GET /api/payments/channels/installed,沿用商户签名鉴权(GET 无 body,rawBody 为空串)。
+ * 返回规范化后的渠道编码数组。
+ */
+export async function listNovaPayInstalledChannelCodes(
+  config?: Partial<NovaPayMerchantConfig>,
+): Promise<string[]> {
+  const resolved = requireNovaPayConfig(config);
+  const url = new URL("/api/payments/channels/installed", resolved.baseUrl);
+  url.searchParams.set("merchantCode", resolved.merchantCode);
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: buildHeaders("", undefined, config),
+    cache: "no-store",
+  });
+
+  const text = await response.text();
+  const data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+
+  if (!response.ok) {
+    throw new Error(
+      typeof data.error === "string"
+        ? data.error
+        : `NovaPay 渠道查询失败，状态码 ${response.status}`,
+    );
+  }
+
+  const payload = data as NovaPayInstalledChannelsResponse;
+  const codes =
+    payload.channelCodes ?? payload.channels?.map((channel) => channel.code) ?? [];
+
+  return codes.map((code) => normalizeChannelCode(code)).filter(Boolean);
+}
+
+// 按商户号缓存"已安装渠道",降低每次打开商品页都打 NovaPay 的开销。
+const INSTALLED_CHANNELS_CACHE_TTL_MS = 60_000;
+const installedChannelsCache = new Map<string, { expiresAt: number; codes: string[] }>();
+
+/**
+ * listNovaPayInstalledChannelCodes 的带缓存版本(60 秒 TTL,按 merchantCode 区分)。
+ * 命中缓存直接返回;未命中或过期才真正请求 NovaPay,成功后写回缓存。
+ * 请求失败时直接抛出,由上层决定回退策略(不污染缓存)。
+ */
+export async function listNovaPayInstalledChannelCodesCached(
+  config?: Partial<NovaPayMerchantConfig>,
+): Promise<string[]> {
+  const resolved = requireNovaPayConfig(config);
+  const cacheKey = resolved.merchantCode;
+  const now = Date.now();
+  const cached = installedChannelsCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > now) {
+    return cached.codes;
+  }
+
+  const codes = await listNovaPayInstalledChannelCodes(config);
+  installedChannelsCache.set(cacheKey, {
+    expiresAt: now + INSTALLED_CHANNELS_CACHE_TTL_MS,
+    codes,
+  });
+
+  return codes;
+}
+
 export async function queryNovaPayOrder(orderReference: string, config?: Partial<NovaPayMerchantConfig>) {
   const resolved = requireNovaPayConfig(config);
   return requestNovaPay<NovaPayResponse>(`/api/payment-orders/${encodeURIComponent(orderReference)}`, {

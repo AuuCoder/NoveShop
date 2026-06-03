@@ -12,6 +12,7 @@ import {
   normalizeEnabledChannelCodes,
   serializeEnabledChannelCodes,
 } from "@/lib/payment-channels";
+import { listNovaPayInstalledChannelCodesCached } from "@/lib/novapay";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
 
@@ -31,19 +32,8 @@ const paymentProfileSelect = {
   updatedAt: true,
 } satisfies Prisma.PaymentProfileSelect;
 
-const paymentProfileChannelConfigSelect = {
-  id: true,
-  defaultChannelCode: true,
-  enabledChannelCodes: true,
-  isActive: true,
-} satisfies Prisma.PaymentProfileSelect;
-
 type PaymentProfileRow = Prisma.PaymentProfileGetPayload<{
   select: typeof paymentProfileSelect;
-}>;
-
-type PaymentProfileChannelConfigRow = Prisma.PaymentProfileGetPayload<{
-  select: typeof paymentProfileChannelConfigSelect;
 }>;
 
 export type PaymentProfileSnapshot = Omit<
@@ -75,22 +65,6 @@ function hydrateOptionalPaymentProfile(profile: PaymentProfileRow | null) {
 
 function hydratePaymentProfiles(profiles: PaymentProfileRow[]) {
   return profiles.map((profile) => hydratePaymentProfile(profile));
-}
-
-function buildCheckoutChannelConfiguration(
-  profile: PaymentProfileChannelConfigRow | null,
-) {
-  if (!profile || !profile.isActive) {
-    return null;
-  }
-
-  return {
-    defaultChannelCode: profile.defaultChannelCode,
-    enabledChannelCodes: normalizeEnabledChannelCodes(
-      profile.enabledChannelCodes,
-      profile.defaultChannelCode,
-    ),
-  };
 }
 
 function buildStoredPaymentProfileInput(input: {
@@ -743,6 +717,54 @@ export async function resolvePaymentProfileId(input?: string | null) {
   return (await requireDefaultPaymentProfile()).id;
 }
 
+/**
+ * 用 NovaPay 实际已安装的渠道,过滤掉商户配置里"开放了但 NovaPay 没装"的渠道。
+ * - 取「本地开放渠道」与「NovaPay 已安装渠道」的交集,保留本地顺序。
+ * - 默认渠道若被过滤掉,则取交集后的第一个作为新默认。
+ * - 交集为空 → 返回 null(该商户当前没有任何可用支付方式)。
+ * - 调 NovaPay 失败时,为不阻断下单,回退到本地配置(宁可多显示也不至于完全不能下单)。
+ */
+async function intersectWithNovaPayInstalledChannels(
+  profile: PaymentProfileSnapshot,
+): Promise<{ defaultChannelCode: string; enabledChannelCodes: string[] } | null> {
+  const configured = normalizeEnabledChannelCodes(
+    profile.enabledChannelCodes,
+    profile.defaultChannelCode,
+  );
+
+  let installed: string[];
+  try {
+    installed = await listNovaPayInstalledChannelCodesCached({
+      merchantCode: profile.merchantCode,
+      apiKey: profile.apiKey,
+      apiSecret: profile.apiSecret,
+      defaultChannelCode: profile.defaultChannelCode,
+    });
+  } catch (error) {
+    console.error("Failed to fetch NovaPay installed channels, falling back to configured list", error);
+    return {
+      defaultChannelCode: profile.defaultChannelCode,
+      enabledChannelCodes: configured,
+    };
+  }
+
+  const installedSet = new Set(installed);
+  const usable = configured.filter((code) => installedSet.has(code));
+
+  if (usable.length === 0) {
+    return null;
+  }
+
+  const defaultChannelCode = usable.includes(profile.defaultChannelCode)
+    ? profile.defaultChannelCode
+    : usable[0];
+
+  return {
+    defaultChannelCode,
+    enabledChannelCodes: normalizeEnabledChannelCodes(usable, defaultChannelCode),
+  };
+}
+
 export async function getCheckoutChannelConfiguration(paymentProfileId?: string | null) {
   const id = normalizeOptionalId(paymentProfileId);
 
@@ -751,10 +773,14 @@ export async function getCheckoutChannelConfiguration(paymentProfileId?: string 
       where: {
         id,
       },
-      select: paymentProfileChannelConfigSelect,
+      select: paymentProfileSelect,
     });
 
-    return buildCheckoutChannelConfiguration(profile);
+    if (!profile || !profile.isActive) {
+      return null;
+    }
+
+    return intersectWithNovaPayInstalledChannels(hydratePaymentProfile(profile));
   }
 
   const profile = await prisma.paymentProfile.findFirst({
@@ -763,11 +789,11 @@ export async function getCheckoutChannelConfiguration(paymentProfileId?: string 
       isDefault: true,
     },
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    select: paymentProfileChannelConfigSelect,
+    select: paymentProfileSelect,
   });
 
   if (profile) {
-    return buildCheckoutChannelConfiguration(profile);
+    return intersectWithNovaPayInstalledChannels(hydratePaymentProfile(profile));
   }
 
   const envProfile = getEnvPaymentProfileInput();
