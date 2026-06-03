@@ -702,7 +702,7 @@ export async function updatePlatformStorefrontAnnouncementAction(formData: FormD
     });
 
     revalidatePath(buildPlatformStorefrontPath());
-    revalidatePath("/store/platform/products/[slug]", "page");
+    revalidatePath("/s/platform/products/[slug]", "page");
   } catch (error) {
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
@@ -729,7 +729,7 @@ export async function togglePlatformStorefrontAnnouncementEnabledAction(formData
     });
 
     revalidatePath(buildPlatformStorefrontPath());
-    revalidatePath("/store/platform/products/[slug]", "page");
+    revalidatePath("/s/platform/products/[slug]", "page");
     destination = appendMessageToPath(
       returnTo,
       "success",

@@ -2202,7 +2202,7 @@ function MerchantsSection({
 
             <label className="admin-check-row">
               <input type="checkbox" name="enabled" defaultChecked={platformAnnouncement.enabled} />
-              <span>在 `/store/platform` 和对应商品详情页展示公告</span>
+              <span>在 `/s/platform` 和对应商品详情页展示公告</span>
             </label>
 
             <div className="button-row">
@@ -2456,7 +2456,7 @@ function MerchantsSection({
                             查看店铺
                           </Link>
                         </strong>
-                        <p className="small-copy">专属 `/store/{merchant.id}` 前台链接</p>
+                        <p className="small-copy">专属 `/s/{merchant.id}` 前台链接</p>
                       </div>
                     </div>
 

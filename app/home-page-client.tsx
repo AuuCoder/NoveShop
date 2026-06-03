@@ -210,13 +210,13 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
             detail: "Platform-owned products convert in the official store instead of mixing with merchant inventory.",
             label: "Official Store",
             step: "02",
-            value: "/store/platform",
+            value: "/s/platform",
           },
           {
             detail: "Each merchant gets an isolated storefront, catalog, SKUs, and stock model.",
             label: "Merchant Store",
             step: "03",
-            value: "/store/[merchantId]",
+            value: "/s/[merchantId]",
           },
           {
             detail: "Orders route through the merchant bound to the product, then deliver cards automatically after confirmation.",
@@ -227,7 +227,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         ],
         commandTitle: "See the homepage, storefronts, payment routing, and fulfillment in one operating view",
         kicker: "Enterprise Digital Goods Platform",
-        lead: "NoveShop turns the homepage into a proper brand landing page. The platform store lives at /store/platform, while each merchant keeps an isolated /store/[merchantId] storefront with its own catalog, inventory, NovaPay profile, and order ownership.",
+        lead: "NoveShop turns the homepage into a proper brand landing page. The platform store lives at /s/platform, while each merchant keeps an isolated /s/[merchantId] storefront with its own catalog, inventory, NovaPay profile, and order ownership.",
         signals: ["Official Retail", "Merchant Storefronts", "NovaPay Routing", "SKU Fulfillment"],
         title: "Run official retail, merchant storefronts, and multi-merchant payments from one digital goods platform",
       },
@@ -284,7 +284,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           { label: "Multi-SKU Products", value: multiSkuProductCount },
           { label: "Merchant Stores", value: merchantStoreCount },
         ],
-        title: "The platform store now lives at /store/platform",
+        title: "The platform store now lives at /s/platform",
       },
       trustCards: [
         {
@@ -411,13 +411,13 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
           detail: "平台自营商品统一在官方渠道成交，不与合作方商品混合展示。",
           label: "官方渠道",
           step: "02",
-          value: "/store/platform",
+          value: "/s/platform",
         },
         {
           detail: "每个合作方都拥有独立站点、商品目录与规格库存空间。",
           label: "合作方站点",
           step: "03",
-          value: "/store/[merchantId]",
+          value: "/s/[merchantId]",
         },
         {
           detail: "订单按商品归属的业务主体收款，状态确认后自动触发交付。",
@@ -484,7 +484,7 @@ function getHomeCopy(language: SiteLanguage, props: HomePageClientProps) {
         { label: "多规格商品", value: multiSkuProductCount },
         { label: "合作方站点", value: merchantStoreCount },
       ],
-      title: "官方渠道入口位于 /store/platform",
+      title: "官方渠道入口位于 /s/platform",
     },
     trustCards: [
       {

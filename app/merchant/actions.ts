@@ -1224,7 +1224,7 @@ export async function updateMerchantStorefrontAnnouncementAction(formData: FormD
     });
 
     revalidateMerchantSurface(merchant.id);
-    revalidatePath("/store/[merchantId]/products/[slug]", "page");
+    revalidatePath("/s/[merchantId]/products/[slug]", "page");
     redirect(appendMessageToPath(returnTo, "success", "店铺公告已更新。"));
   } catch (error) {
     redirect(appendMessageToPath(returnTo, "error", getMessage(error)));
@@ -1248,7 +1248,7 @@ export async function toggleMerchantStorefrontAnnouncementEnabledAction(formData
     });
 
     revalidateMerchantSurface(merchant.id);
-    revalidatePath("/store/[merchantId]/products/[slug]", "page");
+    revalidatePath("/s/[merchantId]/products/[slug]", "page");
     redirect(
       appendMessageToPath(
         returnTo,

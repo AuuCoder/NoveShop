@@ -28,8 +28,8 @@ function getStorefrontIndexPath(path: string) {
   const pathname = stripSearchAndHash(path);
   const segments = pathname.split("/").filter(Boolean);
 
-  if (segments[0] === "store" && segments[1]) {
-    return `/store/${segments[1]}`;
+  if (segments[0] === "s" && segments[1]) {
+    return `/s/${segments[1]}`;
   }
 
   return null;

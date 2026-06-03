@@ -1,7 +1,7 @@
 export const PLATFORM_STOREFRONT_ID = "platform";
 
 export function buildMerchantStorefrontPath(merchantAccountId: string) {
-  return `/store/${merchantAccountId}`;
+  return `/s/${merchantAccountId}`;
 }
 
 export function buildMerchantStorefrontProductPath(merchantAccountId: string, slug: string) {
