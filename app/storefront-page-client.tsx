@@ -91,6 +91,7 @@ function formatDateTime(value: string | null, language: SiteLanguage) {
   return new Intl.DateTimeFormat(language === "zh" ? "zh-CN" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Asia/Shanghai",
   }).format(new Date(value));
 }
 

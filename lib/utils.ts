@@ -63,6 +63,7 @@ export function formatDateTime(value: Date | null | undefined) {
   return new Intl.DateTimeFormat("zh-CN", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Asia/Shanghai",
   }).format(value);
 }
 
