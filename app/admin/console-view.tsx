@@ -1983,10 +1983,15 @@ function InventorySection({
                   <p className="admin-section-kicker">Ledger</p>
                   <h2 className="order-title">库存明细台账</h2>
                 </div>
-                <span className="small-copy">只展示当前筛选结果下的最近库存记录</span>
+                <span className="small-copy">选定具体商户后，展示该商户的逐条卡密明细</span>
               </div>
 
-              {filteredInventoryItems.length === 0 ? (
+              {inventoryMerchant === "all" ? (
+                <div className="admin-empty-state">
+                  <strong>请先选择一个商户</strong>
+                  <p>逐条卡密明细只在选定具体商户后展示。请在上方“归属商户”里选择一个商户（或平台直营），再查看其库存明细。</p>
+                </div>
+              ) : filteredInventoryItems.length === 0 ? (
                 <div className="admin-empty-state">
                   <strong>没有符合条件的库存明细</strong>
                   <p>换一个筛选条件，或者先给对应 SKU 导入更多卡密。</p>
