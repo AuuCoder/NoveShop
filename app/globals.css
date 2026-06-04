@@ -7250,3 +7250,30 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
   top: 0;
   height: 100vh;
 }
+
+/* ---- inventory page: tidy single-column toolbar + horizontal filters ---- */
+.admin-route .admin-inventory-toolbar {
+  gap: 16px;
+}
+
+/* filter fields laid out in a responsive row, submit aligned to the end */
+.admin-route .admin-inventory-filter-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 14px;
+  align-items: end;
+}
+
+.admin-route .admin-inventory-filter-form .field {
+  gap: 6px;
+}
+
+.admin-route .admin-inventory-filter-form > button[type="submit"] {
+  height: 38px;
+  align-self: end;
+}
+
+/* the summary strip below filters: even, bordered, flat */
+.admin-route .admin-inventory-toolbar .admin-stock-strip {
+  margin-top: 14px;
+}

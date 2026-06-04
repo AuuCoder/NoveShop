@@ -1711,7 +1711,7 @@ function InventorySection({
   return (
     <>
       {showImport || showFilters ? (
-        <section className="admin-content-grid">
+        <section className="admin-column-stack admin-inventory-toolbar">
           <div className="admin-column-stack">
             {showImport ? (
               <article id="inventory-import" className="admin-anchor-target admin-surface">
@@ -1797,7 +1797,7 @@ function InventorySection({
                   </Link>
                 </div>
 
-                <form action={returnTo} method="get" className="inline-form">
+                <form action={returnTo} method="get" className="inline-form admin-inventory-filter-form">
                   <div className="field">
                     <label htmlFor="inventoryKeyword">关键字</label>
                     <input
