@@ -6,6 +6,7 @@ import { ImageUploadField } from "@/app/image-upload-field";
 import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
 import { FormDialog } from "@/app/components/form-dialog";
+import { AutoSubmitSelect } from "@/app/components/auto-submit-select";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -1810,7 +1811,7 @@ function InventorySection({
 
                   <div className="field">
                     <label htmlFor="inventoryMerchant">归属商户</label>
-                    <select id="inventoryMerchant" name="inventoryMerchant" defaultValue={inventoryMerchant}>
+                    <AutoSubmitSelect id="inventoryMerchant" name="inventoryMerchant" defaultValue={inventoryMerchant}>
                       <option value="all">全部商户</option>
                       <option value="platform">平台直营</option>
                       {inventoryMerchantOptions
@@ -1821,30 +1822,30 @@ function InventorySection({
                             {option.merchantEmail ? ` · ${option.merchantEmail}` : ""}
                           </option>
                         ))}
-                    </select>
+                    </AutoSubmitSelect>
                   </div>
 
                   <div className="field">
                     <label htmlFor="inventoryProduct">商品</label>
-                    <select id="inventoryProduct" name="inventoryProduct" defaultValue={inventoryProduct}>
+                    <AutoSubmitSelect id="inventoryProduct" name="inventoryProduct" defaultValue={inventoryProduct}>
                       <option value="all">全部商品</option>
                       {dashboard.products.map((product) => (
                         <option key={product.id} value={product.id}>
                           {product.name}
                         </option>
                       ))}
-                    </select>
+                    </AutoSubmitSelect>
                   </div>
 
                   <div className="field">
                     <label htmlFor="inventoryState">库存状态</label>
-                    <select id="inventoryState" name="inventoryState" defaultValue={inventoryState}>
+                    <AutoSubmitSelect id="inventoryState" name="inventoryState" defaultValue={inventoryState}>
                       <option value="all">全部状态</option>
                       <option value="low">低库存</option>
                       <option value="out">已售罄</option>
                       <option value="healthy">库存正常</option>
                       <option value="disabled">已停用 SKU</option>
-                    </select>
+                    </AutoSubmitSelect>
                   </div>
 
                   <button type="submit" className="button-secondary">
@@ -1891,10 +1892,15 @@ function InventorySection({
                   <p className="admin-section-kicker">SKU Matrix</p>
                   <h2 className="order-title">SKU 库存台账</h2>
                 </div>
-                <span className="small-copy">全宽表格查看商品、商户、规格和实时库存</span>
+                <span className="small-copy">选定具体商户后，展示该商户的商品、规格和实时库存</span>
               </div>
 
-              {filteredInventoryRows.length === 0 ? (
+              {inventoryMerchant === "all" ? (
+                <div className="admin-empty-state">
+                  <strong>请先选择一个商户</strong>
+                  <p>SKU 库存台账只在选定具体商户后展示。请在上方“归属商户”里选择一个商户（或平台直营）。</p>
+                </div>
+              ) : filteredInventoryRows.length === 0 ? (
                 <div className="admin-empty-state">
                   <strong>没有符合条件的 SKU 库存记录</strong>
                   <p>可以换一个商户、商品或库存状态再试，或者先去商品模块补充更多 SKU。</p>
