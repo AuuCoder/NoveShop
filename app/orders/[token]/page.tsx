@@ -62,7 +62,7 @@ export default async function OrderDetailPage({
 
   const paymentUrl = order.hostedCheckoutUrl || order.checkoutUrl;
   const storefrontPath = buildStorefrontPath(order.paymentProfile?.ownerId);
-  const queryHref = `/query?orderNo=${encodeURIComponent(order.orderNo)}&email=${encodeURIComponent(order.customerEmail)}`;
+  const queryHref = `/query?email=${encodeURIComponent(order.customerEmail)}`;
 
   return (
     <div className="bg-background">

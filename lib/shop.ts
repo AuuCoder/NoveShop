@@ -3049,6 +3049,23 @@ export async function lookupOrder(orderNo: string, customerEmail: string) {
   return hydrateOrderWithCardSecrets(order);
 }
 
+/**
+ * 按邮箱列出该客户的订单（最近优先）。供前台订单查询页使用：客户只用邮箱即可查到自己名下全部订单。
+ */
+export async function listOrdersByEmail(customerEmail: string, limit = 50) {
+  const email = normalizeEmail(customerEmail);
+  const orders = await prisma.shopOrder.findMany({
+    where: {
+      customerEmail: email,
+    },
+    include: orderInclude,
+    orderBy: [{ createdAt: "desc" }],
+    take: limit,
+  });
+
+  return orders.map((order) => hydrateOrderWithCardSecrets(order));
+}
+
 async function refreshOrderByPublicTokenWithAccess(
   publicToken: string,
   options?: {
