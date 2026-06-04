@@ -367,13 +367,11 @@ export const MERCHANT_TAB_VIEWS: Record<MerchantTab, readonly MerchantTabView[]>
     {
       key: "overview",
       label: "库存中心",
-      description: "查看库存、筛选矩阵和台账。",
+      description: "查看库存矩阵与告警,入库/台账见左侧子页。",
       href: "/merchant/inventory",
       sectionIds: [
-        "inventory-import",
         "inventory-filters",
         "inventory-stock",
-        "inventory-ledger",
         "inventory-alerts",
       ],
     },
@@ -433,14 +431,12 @@ export const MERCHANT_TAB_VIEWS: Record<MerchantTab, readonly MerchantTabView[]>
     {
       key: "overview",
       label: "客户洞察",
-      description: "查看客户分层、复购和转化线索。",
+      description: "查看客户画像与分层,复购/待转化见左侧子页。",
       href: "/merchant/customers",
       sectionIds: [
         "customers-filters",
         "customers-snapshot",
         "customers-list",
-        "customers-repeat",
-        "customers-conversion",
       ],
     },
     {
@@ -499,23 +495,13 @@ export const MERCHANT_TAB_VIEWS: Record<MerchantTab, readonly MerchantTabView[]>
     {
       key: "overview",
       label: "收款总览",
-      description: "同时查看配置、版本和支付链路。",
+      description: "查看收款配置与默认路由,详细监控与分析见左侧子页。",
       href: "/merchant/payments",
       sectionIds: [
         "payments-profile",
         "payments-routing",
         "payments-versions",
         "payments-rules",
-        "payment-filters",
-        "payment-priority",
-        "payment-command",
-        "payment-control",
-        "payment-sla",
-        "payment-latency",
-        "payment-reconcile",
-        "payment-audit",
-        "payment-pipeline",
-        "payment-attempts",
       ],
     },
     {
@@ -564,15 +550,12 @@ export const MERCHANT_TAB_VIEWS: Record<MerchantTab, readonly MerchantTabView[]>
     {
       key: "overview",
       label: "账号总览",
-      description: "同时查看资料、安全、公告和治理边界。",
+      description: "查看账号资料、登录安全与店铺公告,治理与注销见左侧子页。",
       href: "/merchant/settings",
       sectionIds: [
         "settings-profile",
         "settings-security",
         "settings-storefront",
-        "settings-governance",
-        "settings-shortcuts",
-        "settings-danger",
       ],
     },
     {

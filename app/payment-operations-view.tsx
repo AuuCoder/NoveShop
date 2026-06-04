@@ -2525,87 +2525,90 @@ export function PaymentOperationsView({
                 <p>当补偿失败、回调异常或订单卡在待支付阶段时，这里会自动把最需要先处理的链路顶上来。</p>
               </div>
             ) : (
-              <div className="admin-ops-priority-list">
-                {orderAlerts.map((alert) => {
-                  const actionableTask =
-                    alert.bundle.syncTasks.find((task) => task.status !== "SUCCEEDED") ?? alert.bundle.syncTasks[0] ?? null;
-                  const latestCallback = alert.bundle.callbacks[0] ?? null;
-                  const focusHref = buildFocusedOrderHref(basePath, data, alert.bundle);
+              <div className="table-wrap admin-table-wrap">
+                <table className="admin-ops-table">
+                  <thead>
+                    <tr>
+                      <th>严重度</th>
+                      <th>订单</th>
+                      <th>商户</th>
+                      <th>金额</th>
+                      <th>原因</th>
+                      <th>最近活动</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderAlerts.map((alert) => {
+                      const actionableTask =
+                        alert.bundle.syncTasks.find((task) => task.status !== "SUCCEEDED") ?? alert.bundle.syncTasks[0] ?? null;
+                      const latestCallback = alert.bundle.callbacks[0] ?? null;
+                      const focusHref = buildFocusedOrderHref(basePath, data, alert.bundle);
 
-                  return (
-                    <article key={alert.bundle.key} className="admin-ops-priority-item">
-                      <div className="admin-ops-priority-head">
-                        <div>
-                          <div className="admin-inline-tags">
+                      return (
+                        <tr key={alert.bundle.key}>
+                          <td>
                             <span className={`badge ${alert.severityTone}`}>{alert.severityLabel}</span>
-                            <span className="badge muted">{alert.bundle.channelCode ?? "待识别通道"}</span>
-                          </div>
-                          <h3>{alert.bundle.orderNo || "等待识别订单"}</h3>
-                          <p className="small-copy">{alert.summary}</p>
-                        </div>
+                          </td>
+                          <td className="admin-ops-table-cell">
+                            <strong>{alert.bundle.orderNo || "等待识别订单"}</strong>
+                            <p className="small-copy">{alert.bundle.channelCode ?? "待识别通道"}</p>
+                            <p className="small-copy">{alert.summary}</p>
+                          </td>
+                          <td>{alert.bundle.merchantName ?? "待识别"}</td>
+                          <td>{alert.bundle.amountCents != null ? describeOrderAmount(alert.bundle.amountCents) : "待识别"}</td>
+                          <td>
+                            <div className="admin-inline-tags">
+                              {alert.reasons.map((reason) => (
+                                <span key={reason} className="badge warning">
+                                  {reason}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="admin-ops-table-time">
+                            {alert.bundle.lastActivityAt ? formatDateTime(alert.bundle.lastActivityAt) : "暂无"}
+                          </td>
+                          <td>
+                            <div className="admin-ops-table-actions">
+                              {actionableTask ? (
+                                <form action={runSyncTaskAction}>
+                                  <input type="hidden" name="taskId" value={actionableTask.id} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    执行补偿
+                                  </button>
+                                </form>
+                              ) : alert.bundle.publicToken ? (
+                                <form action={refreshOrderAction}>
+                                  <input type="hidden" name="publicToken" value={alert.bundle.publicToken} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    重查订单
+                                  </button>
+                                </form>
+                              ) : null}
 
-                        <div className="admin-ops-priority-meta">
-                          <div>
-                            <span>商户</span>
-                            <strong>{alert.bundle.merchantName ?? "待识别"}</strong>
-                          </div>
-                          <div>
-                            <span>金额</span>
-                            <strong>
-                              {alert.bundle.amountCents != null ? describeOrderAmount(alert.bundle.amountCents) : "待识别"}
-                            </strong>
-                          </div>
-                          <div>
-                            <span>最近活动</span>
-                            <strong>{alert.bundle.lastActivityAt ? formatDateTime(alert.bundle.lastActivityAt) : "暂无"}</strong>
-                          </div>
-                        </div>
-                      </div>
+                              {!actionableTask && latestCallback ? (
+                                <form action={replayCallbackAction}>
+                                  <input type="hidden" name="logId" value={latestCallback.id} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    回放回调
+                                  </button>
+                                </form>
+                              ) : null}
 
-                      <div className="admin-inline-tags admin-ops-priority-reasons">
-                        {alert.reasons.map((reason) => (
-                          <span key={reason} className="badge warning">
-                            {reason}
-                          </span>
-                        ))}
-                      </div>
-
-                      <div className="admin-ops-order-actions">
-                        {actionableTask ? (
-                          <form action={runSyncTaskAction}>
-                            <input type="hidden" name="taskId" value={actionableTask.id} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              立即执行补偿
-                            </button>
-                          </form>
-                        ) : alert.bundle.publicToken ? (
-                          <form action={refreshOrderAction}>
-                            <input type="hidden" name="publicToken" value={alert.bundle.publicToken} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              立即重查订单
-                            </button>
-                          </form>
-                        ) : null}
-
-                        {!actionableTask && latestCallback ? (
-                          <form action={replayCallbackAction}>
-                            <input type="hidden" name="logId" value={latestCallback.id} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              回放最新回调
-                            </button>
-                          </form>
-                        ) : null}
-
-                        <Link href={focusHref} className="button-link">
-                          聚焦此单
-                        </Link>
-                      </div>
-                    </article>
-                  );
-                })}
+                              <Link href={focusHref} className="button-link">
+                                聚焦
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </article>
@@ -2628,59 +2631,60 @@ export function PaymentOperationsView({
                   <p>等支付商户配置完成并产生真实订单后，这里会自动按商户输出健康状态与异常浓度。</p>
                 </div>
               ) : (
-                <div className="admin-ops-merchant-grid">
-                  {merchantHealthCards.map((card) => {
-                    const successRate = card.orderCount > 0 ? Math.round((card.succeededOrders / card.orderCount) * 100) : 0;
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-ops-table">
+                    <thead>
+                      <tr>
+                        <th>商户</th>
+                        <th>状态</th>
+                        <th>订单数</th>
+                        <th>GMV</th>
+                        <th>成功率</th>
+                        <th>异常</th>
+                        <th>最近活动</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {merchantHealthCards.map((card) => {
+                        const successRate =
+                          card.orderCount > 0 ? Math.round((card.succeededOrders / card.orderCount) * 100) : 0;
 
-                    return (
-                      <article key={card.key} className="admin-ops-merchant-card">
-                        <div className="admin-ops-merchant-head">
-                          <div>
-                            <div className="admin-inline-tags">
+                        return (
+                          <tr key={card.key}>
+                            <td className="admin-ops-table-cell">
+                              <strong>{card.name}</strong>
+                              <p className="small-copy">{card.merchantCode ?? "未识别商户号"}</p>
+                              <div className="admin-inline-tags">
+                                <span className="badge muted">{card.ownerLabel}</span>
+                                {card.isDefault ? <span className="badge success">默认路由</span> : null}
+                              </div>
+                            </td>
+                            <td>
                               <span className={`badge ${card.statusTone}`}>{card.statusLabel}</span>
-                              <span className="badge muted">{card.ownerLabel}</span>
-                              {card.isDefault ? <span className="badge success">默认路由</span> : null}
-                            </div>
-                            <h3>{card.name}</h3>
-                            <p className="small-copy">{card.merchantCode ?? "未识别商户号"}</p>
-                          </div>
-
-                          {card.paymentProfileId ? (
-                            <Link
-                              href={buildPaymentProfileHref(basePath, data, card.paymentProfileId)}
-                              className="button-link"
-                            >
-                              查看商户链路
-                            </Link>
-                          ) : null}
-                        </div>
-
-                        <div className="admin-ops-merchant-metrics">
-                          <div>
-                            <span>订单数</span>
-                            <strong>{card.orderCount}</strong>
-                          </div>
-                          <div>
-                            <span>GMV</span>
-                            <strong>{describeOrderAmount(card.totalAmountCents)}</strong>
-                          </div>
-                          <div>
-                            <span>成功率</span>
-                            <strong>{card.orderCount > 0 ? `${successRate}%` : "暂无"}</strong>
-                          </div>
-                          <div>
-                            <span>异常</span>
-                            <strong>{card.callbackFailures + card.failedTasks}</strong>
-                          </div>
-                        </div>
-
-                        <p className="small-copy admin-ops-merchant-copy">{card.statusSummary}</p>
-                        <p className="small-copy admin-ops-merchant-copy">
-                          最近活动: {card.lastActivityAt ? formatDateTime(card.lastActivityAt) : "暂无链路活动"}
-                        </p>
-                      </article>
-                    );
-                  })}
+                            </td>
+                            <td>{card.orderCount}</td>
+                            <td>{describeOrderAmount(card.totalAmountCents)}</td>
+                            <td>{card.orderCount > 0 ? `${successRate}%` : "暂无"}</td>
+                            <td>{card.callbackFailures + card.failedTasks}</td>
+                            <td className="admin-ops-table-time">
+                              {card.lastActivityAt ? formatDateTime(card.lastActivityAt) : "暂无"}
+                            </td>
+                            <td>
+                              {card.paymentProfileId ? (
+                                <Link
+                                  href={buildPaymentProfileHref(basePath, data, card.paymentProfileId)}
+                                  className="button-link"
+                                >
+                                  查看链路
+                                </Link>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </article>
@@ -2707,155 +2711,153 @@ export function PaymentOperationsView({
                 <p>当支付尝试、回调或补偿任务出现后，这里会自动把它们按订单聚成一张运维卡片。</p>
               </div>
             ) : (
-              <div className="admin-ops-order-grid">
-                {orderBundles.map((bundle) => {
-                  const flags = buildOrderBundleFlags(bundle);
-                  const timeline = buildOrderBundleTimeline(bundle);
-                  const latestCallback = bundle.callbacks[0] ?? null;
-                  const actionableTask =
-                    bundle.syncTasks.find((task) => task.status !== "SUCCEEDED") ?? bundle.syncTasks[0] ?? null;
-                  const checkoutUrl = bundle.attempt?.hostedCheckoutUrl || bundle.attempt?.checkoutUrl || null;
+              <div className="table-wrap admin-table-wrap">
+                <table className="admin-ops-table admin-ops-command-table">
+                  <thead>
+                    <tr>
+                      <th>订单</th>
+                      <th>状态</th>
+                      <th>客户 / 商户</th>
+                      <th>金额</th>
+                      <th>最近活动</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderBundles.map((bundle) => {
+                      const flags = buildOrderBundleFlags(bundle);
+                      const timeline = buildOrderBundleTimeline(bundle);
+                      const latestCallback = bundle.callbacks[0] ?? null;
+                      const actionableTask =
+                        bundle.syncTasks.find((task) => task.status !== "SUCCEEDED") ?? bundle.syncTasks[0] ?? null;
+                      const checkoutUrl = bundle.attempt?.hostedCheckoutUrl || bundle.attempt?.checkoutUrl || null;
 
-                  return (
-                    <article key={bundle.key} className="admin-ops-order-card">
-                      <div className="admin-ops-order-head">
-                        <div>
-                          <p className="admin-section-kicker">Order</p>
-                          <h3>{bundle.orderNo || "等待识别订单"}</h3>
-                          <p className="small-copy">
-                            {bundle.productName} / {bundle.skuName}
-                          </p>
-                        </div>
-                        <div className="admin-inline-tags">
-                          {bundle.orderStatus ? (
-                            <span className={`badge ${getOrderStatusTone(bundle.orderStatus)}`}>
-                              {getOrderStatusLabel(bundle.orderStatus)}
-                            </span>
-                          ) : null}
-                          {bundle.attemptStatus ? (
-                            <span className={`badge ${getPaymentAttemptStatusTone(bundle.attemptStatus)}`}>
-                              {getPaymentAttemptStatusLabel(bundle.attemptStatus)}
-                            </span>
-                          ) : null}
-                          <span className="badge muted">{bundle.channelCode ?? "待识别通道"}</span>
-                        </div>
-                      </div>
-
-                      <div className="admin-ops-order-meta">
-                        <div>
-                          <span>客户</span>
-                          <strong>{bundle.customerEmail ?? "待识别"}</strong>
-                        </div>
-                        <div>
-                          <span>商户</span>
-                          <strong>{bundle.merchantName ?? "待识别"}</strong>
-                        </div>
-                        <div>
-                          <span>金额</span>
-                          <strong>{bundle.amountCents != null ? describeOrderAmount(bundle.amountCents) : "待识别"}</strong>
-                        </div>
-                        <div>
-                          <span>最近活动</span>
-                          <strong>{bundle.lastActivityAt ? formatDateTime(bundle.lastActivityAt) : "暂无"}</strong>
-                        </div>
-                      </div>
-
-                      {flags.length > 0 ? (
-                        <div className="admin-inline-tags admin-ops-order-flags">
-                          {flags.map((flag) => (
-                            <span key={flag} className="badge warning">
-                              {flag}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="small-copy admin-ops-order-copy">
-                          当前这笔订单链路稳定，可以直接从这里跳转订单页或继续做主动重查。
-                        </p>
-                      )}
-
-                      <div className="admin-ops-order-actions">
-                        {bundle.publicToken ? (
-                          <form action={refreshOrderAction}>
-                            <input type="hidden" name="publicToken" value={bundle.publicToken} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              重查订单
-                            </button>
-                          </form>
-                        ) : null}
-
-                        {actionableTask ? (
-                          <form action={runSyncTaskAction}>
-                            <input type="hidden" name="taskId" value={actionableTask.id} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              执行补偿
-                            </button>
-                          </form>
-                        ) : null}
-
-                        {latestCallback ? (
-                          <form action={replayCallbackAction}>
-                            <input type="hidden" name="logId" value={latestCallback.id} />
-                            <input type="hidden" name="returnTo" value={returnTo} />
-                            <button type="submit" className="button-secondary">
-                              回放最新回调
-                            </button>
-                          </form>
-                        ) : null}
-
-                        {bundle.publicToken ? (
-                          <Link href={buildOrderPath(bundle.publicToken)} className="button-link">
-                            查看订单页
-                          </Link>
-                        ) : null}
-
-                        {checkoutUrl ? (
-                          <a href={checkoutUrl} className="button-link" target="_blank" rel="noreferrer">
-                            打开收银台
-                          </a>
-                        ) : null}
-                      </div>
-
-                      <details className="admin-ops-detail-card admin-ops-order-detail">
-                        <summary>展开全链路时间线</summary>
-                        <div className="admin-ops-detail-stack">
-                          <div className="admin-ops-detail-metric-grid">
-                            <div className="admin-ops-detail-metric">
-                              <span>回调总数</span>
-                              <strong>{bundle.callbacks.length}</strong>
-                            </div>
-                            <div className="admin-ops-detail-metric">
-                              <span>补偿任务</span>
-                              <strong>{bundle.syncTasks.length}</strong>
-                            </div>
-                            <div className="admin-ops-detail-metric">
-                              <span>Trace</span>
-                              <strong>{bundle.traceId ? bundle.traceId.slice(-10) : "未记录"}</strong>
-                            </div>
-                            <div className="admin-ops-detail-metric">
-                              <span>商户号</span>
-                              <strong>{bundle.merchantCode ?? "未绑定"}</strong>
-                            </div>
-                          </div>
-
-                          <div className="admin-ops-timeline-list">
-                            {timeline.map((item) => (
-                              <div key={item.id} className="admin-ops-timeline-item">
-                                <span className={`badge ${item.tone}`}>{formatDateTime(item.time)}</span>
-                                <div>
-                                  <strong>{item.title}</strong>
-                                  <p>{item.detail}</p>
-                                </div>
+                      return (
+                        <tr key={bundle.key}>
+                          <td className="admin-ops-table-cell">
+                            <strong>{bundle.orderNo || "等待识别订单"}</strong>
+                            <p className="small-copy">
+                              {bundle.productName} / {bundle.skuName}
+                            </p>
+                            <p className="small-copy">{bundle.channelCode ?? "待识别通道"}</p>
+                            {flags.length > 0 ? (
+                              <div className="admin-inline-tags">
+                                {flags.map((flag) => (
+                                  <span key={flag} className="badge warning">
+                                    {flag}
+                                  </span>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      </details>
-                    </article>
-                  );
-                })}
+                            ) : null}
+                          </td>
+                          <td>
+                            <div className="admin-inline-tags">
+                              {bundle.orderStatus ? (
+                                <span className={`badge ${getOrderStatusTone(bundle.orderStatus)}`}>
+                                  {getOrderStatusLabel(bundle.orderStatus)}
+                                </span>
+                              ) : null}
+                              {bundle.attemptStatus ? (
+                                <span className={`badge ${getPaymentAttemptStatusTone(bundle.attemptStatus)}`}>
+                                  {getPaymentAttemptStatusLabel(bundle.attemptStatus)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="admin-ops-table-cell">
+                            <strong>{bundle.customerEmail ?? "待识别"}</strong>
+                            <p className="small-copy">{bundle.merchantName ?? "待识别商户"}</p>
+                          </td>
+                          <td>{bundle.amountCents != null ? describeOrderAmount(bundle.amountCents) : "待识别"}</td>
+                          <td className="admin-ops-table-time">
+                            {bundle.lastActivityAt ? formatDateTime(bundle.lastActivityAt) : "暂无"}
+                          </td>
+                          <td>
+                            <div className="admin-ops-table-actions">
+                              {bundle.publicToken ? (
+                                <form action={refreshOrderAction}>
+                                  <input type="hidden" name="publicToken" value={bundle.publicToken} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    重查
+                                  </button>
+                                </form>
+                              ) : null}
+
+                              {actionableTask ? (
+                                <form action={runSyncTaskAction}>
+                                  <input type="hidden" name="taskId" value={actionableTask.id} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    补偿
+                                  </button>
+                                </form>
+                              ) : null}
+
+                              {latestCallback ? (
+                                <form action={replayCallbackAction}>
+                                  <input type="hidden" name="logId" value={latestCallback.id} />
+                                  <input type="hidden" name="returnTo" value={returnTo} />
+                                  <button type="submit" className="button-secondary">
+                                    回放
+                                  </button>
+                                </form>
+                              ) : null}
+
+                              {bundle.publicToken ? (
+                                <Link href={buildOrderPath(bundle.publicToken)} className="button-link">
+                                  订单页
+                                </Link>
+                              ) : null}
+
+                              {checkoutUrl ? (
+                                <a href={checkoutUrl} className="button-link" target="_blank" rel="noreferrer">
+                                  收银台
+                                </a>
+                              ) : null}
+
+                              <details className="admin-ops-timeline-toggle">
+                                <summary>时间线</summary>
+                                <div className="admin-ops-timeline-pop">
+                                  <div className="admin-ops-detail-metric-grid">
+                                    <div className="admin-ops-detail-metric">
+                                      <span>回调总数</span>
+                                      <strong>{bundle.callbacks.length}</strong>
+                                    </div>
+                                    <div className="admin-ops-detail-metric">
+                                      <span>补偿任务</span>
+                                      <strong>{bundle.syncTasks.length}</strong>
+                                    </div>
+                                    <div className="admin-ops-detail-metric">
+                                      <span>Trace</span>
+                                      <strong>{bundle.traceId ? bundle.traceId.slice(-10) : "未记录"}</strong>
+                                    </div>
+                                    <div className="admin-ops-detail-metric">
+                                      <span>商户号</span>
+                                      <strong>{bundle.merchantCode ?? "未绑定"}</strong>
+                                    </div>
+                                  </div>
+
+                                  <div className="admin-ops-timeline-list">
+                                    {timeline.map((item) => (
+                                      <div key={item.id} className="admin-ops-timeline-item">
+                                        <span className={`badge ${item.tone}`}>{formatDateTime(item.time)}</span>
+                                        <div>
+                                          <strong>{item.title}</strong>
+                                          <p>{item.detail}</p>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </details>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </article>

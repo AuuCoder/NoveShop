@@ -5,6 +5,7 @@ import { PaymentOperationsView } from "@/app/payment-operations-view";
 import { ImageUploadField } from "@/app/image-upload-field";
 import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
+import { FormDialog } from "@/app/components/form-dialog";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -503,26 +504,37 @@ function OverviewSection({
                 <p>先在商户模块新增至少一个 NovaPay 商户，商品下单才有可用的收款账号。</p>
               </div>
             ) : (
-              <div className="admin-sku-stack">
-                {paymentProfiles.map((profile) => (
-                  <div key={profile.id} className="admin-sku-card">
-                    <div className="admin-sku-head">
-                      <div>
-                        <strong>{profile.name}</strong>
-                        <p className="small-copy">{profile.merchantCode}</p>
-                      </div>
-                      <div className="button-row compact">
-                        {profile.isDefault ? <span className="badge warning">默认商户</span> : null}
-                        <span className={`badge ${getPaymentProfileStatusTone(profile)}`}>
-                          {getPaymentProfileStatusLabel(profile)}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="small-copy">默认通道：{profile.defaultChannelCode}</p>
-                    <p className="small-copy">启用方式：{getPaymentChannelCopy(profile)}</p>
-                    <p className="small-copy">{profile.ownerId ? "来源：商户自助配置" : "来源：平台维护"}</p>
-                  </div>
-                ))}
+              <div className="table-wrap admin-table-wrap">
+                <table className="admin-ops-table">
+                  <thead>
+                    <tr>
+                      <th>商户</th>
+                      <th>状态</th>
+                      <th>默认通道</th>
+                      <th>来源</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paymentProfiles.map((profile) => (
+                      <tr key={profile.id}>
+                        <td className="admin-ops-table-cell">
+                          <strong>{profile.name}</strong>
+                          <p className="small-copy">{profile.merchantCode}</p>
+                        </td>
+                        <td>
+                          <div className="admin-inline-tags">
+                            {profile.isDefault ? <span className="badge warning">默认</span> : null}
+                            <span className={`badge ${getPaymentProfileStatusTone(profile)}`}>
+                              {getPaymentProfileStatusLabel(profile)}
+                            </span>
+                          </div>
+                        </td>
+                        <td>{profile.defaultChannelCode}</td>
+                        <td>{profile.ownerId ? "商户自助" : "平台维护"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </article>
@@ -872,12 +884,12 @@ function AdminProductConfigurationArticle({
         )}
       </div>
 
-      <div className="admin-subsection">
-        <div className="admin-subsection-head">
-          <h3>编辑商品基础信息</h3>
-          <p className="small-copy">基础信息保持表单，枚举项全部改成下拉，删除操作也集中在这里。</p>
-        </div>
-
+      <FormDialog
+        triggerLabel="编辑商品基础信息"
+        triggerClassName="button-secondary"
+        title="编辑商品基础信息"
+        description="名称、详情、封面、分类、状态与收款商户。"
+      >
         <form action={updateProductAction} className="inline-form">
           <AdminTabInput tab="products" returnTo={returnTo} />
           <input type="hidden" name="productId" value={product.id} />
@@ -976,7 +988,7 @@ function AdminProductConfigurationArticle({
             </button>
           </div>
         </form>
-      </div>
+      </FormDialog>
 
       <div className="admin-subsection">
         <div className="admin-subsection-head">
@@ -1012,6 +1024,12 @@ function AdminProductConfigurationArticle({
             </form>
 
             {selectedSku ? (
+              <FormDialog
+                triggerLabel={`编辑选中 SKU：${selectedSku.name}`}
+                triggerClassName="button-secondary"
+                title={`编辑 SKU · ${selectedSku.name}`}
+                description="修改名称、售价、阶梯价与启用状态。"
+              >
               <form action={updateSkuAction} className="admin-sku-card">
                 <AdminTabInput tab="products" returnTo={returnTo} />
                 <input type="hidden" name="skuId" value={selectedSku.id} />
@@ -1071,48 +1089,51 @@ function AdminProductConfigurationArticle({
                   </button>
                 </div>
               </form>
+              </FormDialog>
             ) : null}
 
-            <form action={createSkuAction} className="admin-sku-create">
-              <AdminTabInput tab="products" returnTo={returnTo} />
-              <input type="hidden" name="productId" value={product.id} />
-              <input type="hidden" name="productSlug" value={product.slug} />
+            <FormDialog
+              triggerLabel="新增 SKU"
+              triggerClassName="button"
+              title="新增 SKU"
+              description="继续往这个商品下挂更多规格"
+            >
+              <form action={createSkuAction} className="admin-sku-create">
+                <AdminTabInput tab="products" returnTo={returnTo} />
+                <input type="hidden" name="productId" value={product.id} />
+                <input type="hidden" name="productSlug" value={product.slug} />
 
-              <div className="admin-subsection-head">
-                <h3>新增 SKU</h3>
-                <p className="small-copy">继续往这个商品下挂更多规格</p>
-              </div>
-
-              <div className="inline-grid">
-                <div className="field">
-                  <label>SKU 名称</label>
-                  <input name="name" placeholder="例如 年卡" required />
+                <div className="inline-grid">
+                  <div className="field">
+                    <label>SKU 名称</label>
+                    <input name="name" placeholder="例如 年卡" required />
+                  </div>
+                  <div className="field">
+                    <label>SKU 售价</label>
+                    <input name="price" placeholder="99.00" required />
+                  </div>
                 </div>
+
                 <div className="field">
-                  <label>SKU 售价</label>
-                  <input name="price" placeholder="99.00" required />
+                  <label>SKU 说明</label>
+                  <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
                 </div>
-              </div>
 
-              <div className="field">
-                <label>SKU 说明</label>
-                <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
-              </div>
+                <div className="field">
+                  <label>阶梯价规则</label>
+                  <SkuPricingTierEditor name="pricingTiers" />
+                </div>
 
-              <div className="field">
-                <label>阶梯价规则</label>
-                <SkuPricingTierEditor name="pricingTiers" />
-              </div>
+                <label className="admin-check-row">
+                  <input type="checkbox" name="enabled" defaultChecked />
+                  <span>创建后立即启用</span>
+                </label>
 
-              <label className="admin-check-row">
-                <input type="checkbox" name="enabled" defaultChecked />
-                <span>创建后立即启用</span>
-              </label>
-
-              <button type="submit" className="button">
-                添加 SKU
-              </button>
-            </form>
+                <button type="submit" className="button">
+                  添加 SKU
+                </button>
+              </form>
+            </FormDialog>
           </>
         ) : singleModeSku ? (
           <>
@@ -1209,19 +1230,26 @@ function AdminCategoryManagerArticle({
           <p className="admin-section-kicker">Categories</p>
           <h2 className="order-title">商品分类管理</h2>
         </div>
-        <span className="badge muted">官方店铺分类</span>
+        <FormDialog
+          triggerLabel="新增分类"
+          triggerClassName="button-secondary"
+          title="新增分类"
+          description="添加后，创建或编辑商品时即可归类。"
+        >
+          <form action={createCategoryAction} className="inline-form">
+            <AdminTabInput tab="products" returnTo={returnTo} />
+            <div className="field">
+              <label htmlFor="new-category-name">分类名称</label>
+              <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
+            </div>
+            <div className="button-row">
+              <button type="submit" className="button">
+                添加分类
+              </button>
+            </div>
+          </form>
+        </FormDialog>
       </div>
-
-      <form action={createCategoryAction} className="inline-form">
-        <AdminTabInput tab="products" returnTo={returnTo} />
-        <div className="field">
-          <label htmlFor="new-category-name">新增分类</label>
-          <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
-        </div>
-        <button type="submit" className="button-secondary">
-          添加分类
-        </button>
-      </form>
 
       {categories.length === 0 ? (
         <div className="admin-empty-state">
@@ -1296,10 +1324,14 @@ function ProductsSection({
               <div>
                 <p className="admin-section-kicker">Create</p>
                 <h2 className="order-title">创建商品</h2>
+                <p className="small-copy">新建商品并初始化首个默认规格。</p>
               </div>
-              <span className="badge muted">首个 SKU 一起创建</span>
-            </div>
-
+              <FormDialog
+                triggerLabel="创建商品"
+                triggerClassName="button"
+                title="创建商品"
+                description="商品负责展示，首个 SKU 决定价格与库存。"
+              >
             <form action={createProductAction} className="inline-form">
               <AdminTabInput tab="products" returnTo={returnTo} />
 
@@ -1409,10 +1441,14 @@ function ProductsSection({
                 </div>
               </div>
 
-              <button type="submit" className="button">
-                保存商品
-              </button>
+              <div className="button-row">
+                <button type="submit" className="button">
+                  保存商品
+                </button>
+              </div>
             </form>
+              </FormDialog>
+            </div>
           </article>
 
           <AdminCategoryManagerArticle categories={dashboard.categories} returnTo={returnTo} />
@@ -1683,16 +1719,15 @@ function InventorySection({
                   <div>
                     <p className="admin-section-kicker">Import</p>
                     <h2 className="order-title">批量导入卡密</h2>
+                    <p className="small-copy">按 SKU 维度入库，避免多规格商品发错货。</p>
                   </div>
-                  <span className="badge success">按 SKU 入库</span>
-                </div>
-
-                {availableProducts.length === 0 ? (
-                  <div className="admin-empty-state">
-                    <strong>还没有可入库的 SKU</strong>
-                    <p>先去商品模块创建商品和 SKU，再回来按规格导入卡密库存。</p>
-                  </div>
-                ) : (
+                  {availableProducts.length > 0 ? (
+                    <FormDialog
+                      triggerLabel="批量导入"
+                      triggerClassName="button"
+                      title="批量导入卡密"
+                      description="选择 SKU 后，一行一条粘贴卡密内容。"
+                    >
                   <form action={importCardsAction} className="inline-form">
                     <AdminTabInput tab="inventory" returnTo={inventoryReturnTo} />
 
@@ -1729,20 +1764,22 @@ function InventorySection({
                       />
                     </div>
 
-                    <p className="small-copy">
-                      现在库存按 SKU 维度统一管理，多 SKU 商品一定要导入到具体规格，发货和台账才不会混乱。
-                    </p>
-
                     <div className="button-row">
-                      <button type="submit" className="button-secondary">
+                      <button type="submit" className="button">
                         批量导入
                       </button>
-                      <Link href={buildAdminHref("products")} className="button-link">
-                        去商品模块
-                      </Link>
                     </div>
                   </form>
-                )}
+                    </FormDialog>
+                  ) : null}
+                </div>
+
+                {availableProducts.length === 0 ? (
+                  <div className="admin-empty-state">
+                    <strong>还没有可入库的 SKU</strong>
+                    <p>先去商品模块创建商品和 SKU，再回来按规格导入卡密库存。</p>
+                  </div>
+                ) : null}
               </article>
             ) : null}
           </div>
@@ -2257,10 +2294,14 @@ function MerchantsSection({
             <div>
               <p className="admin-section-kicker">Create</p>
               <h2 className="order-title">新增商户账号</h2>
+              <p className="small-copy">平台代创建商户登录账号，商户随后自行补齐参数。</p>
             </div>
-            <span className="badge muted">Account</span>
-          </div>
-
+            <FormDialog
+              triggerLabel="新增商户账号"
+              triggerClassName="button"
+              title="新增商户账号"
+              description="创建后密码加密存储，无法查看原文；如需变更用重置密码。"
+            >
           <form action={createMerchantAccountAction} className="inline-form">
             <AdminTabInput tab="merchants" returnTo={returnTo} />
 
@@ -2297,15 +2338,14 @@ function MerchantsSection({
               <span>创建后立即启用账号</span>
             </label>
 
-            <p className="small-copy">
-              适合平台先代创建商户账号，再交由商户自行登录并补齐 NovaPay 参数、商品和库存。
-              密码只会加密存储，创建后后台不能查看原文，如需变更请使用下方重置密码。
-            </p>
-
-            <button type="submit" className="button">
-              新增商户账号
-            </button>
+            <div className="button-row">
+              <button type="submit" className="button">
+                新增商户账号
+              </button>
+            </div>
           </form>
+            </FormDialog>
+          </div>
             </article>
           ) : null}
 
@@ -2315,10 +2355,14 @@ function MerchantsSection({
             <div>
               <p className="admin-section-kicker">Create</p>
               <h2 className="order-title">新增平台收款配置</h2>
+              <p className="small-copy">维护平台直营、公共路由与兜底路由（NovaPay）。</p>
             </div>
-            <span className="badge warning">NovaPay</span>
-          </div>
-
+            <FormDialog
+              triggerLabel="新增平台配置"
+              triggerClassName="button"
+              title="新增平台收款配置"
+              description="商户自营参数由商户中心配置，这里统一查看与治理。"
+            >
           <form action={updatePaymentProfileAction} className="inline-form">
             <AdminTabInput tab="merchants" returnTo={returnTo} />
 
@@ -2363,7 +2407,7 @@ function MerchantsSection({
               />
             </div>
 
-            <div className="button-row">
+            <div className="admin-check-row-group">
               <label className="admin-check-row">
                 <input type="checkbox" name="isActive" defaultChecked />
                 <span>立即启用该商户</span>
@@ -2375,14 +2419,14 @@ function MerchantsSection({
               </label>
             </div>
 
-            <p className="small-copy">
-              这里主要维护平台直营、公共路由和兜底路由。商户自营的 NovaPay 参数由商户中心自行配置，这里统一查看与治理。
-            </p>
-
-            <button type="submit" className="button">
-              新增平台配置
-            </button>
+            <div className="button-row">
+              <button type="submit" className="button">
+                新增平台配置
+              </button>
+            </div>
           </form>
+            </FormDialog>
+          </div>
             </article>
           ) : null}
         </section>
@@ -2415,8 +2459,8 @@ function MerchantsSection({
                 const profile = merchant.paymentProfile;
 
                 return (
-                  <article key={merchant.id} className="admin-merchant-account-card">
-                    <div className="admin-merchant-account-head">
+                  <details key={merchant.id} className="admin-merchant-account-row">
+                    <summary className="admin-merchant-account-summary">
                       <div className="admin-merchant-primary-cell">
                         <strong>{merchant.name}</strong>
                         <span>{merchant.email}</span>
@@ -2427,62 +2471,31 @@ function MerchantsSection({
                           {getMerchantAccountStatusLabel(merchant)}
                         </span>
                         {profile ? (
-                          <>
-                            <span className="badge warning">商户自助</span>
-                            <span className={`badge ${getPaymentProfileStatusTone(profile)}`}>
-                              {getPaymentProfileStatusLabel(profile)}
-                            </span>
-                          </>
+                          <span className={`badge ${getPaymentProfileStatusTone(profile)}`}>
+                            {getPaymentProfileStatusLabel(profile)}
+                          </span>
                         ) : (
                           <span className="badge muted">待配置</span>
                         )}
-                        <span className={`badge ${merchant.storeAnnouncementEnabled ? "success" : "muted"}`}>
-                          {merchant.storeAnnouncementEnabled ? "公告展示中" : "公告未启用"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="admin-merchant-account-meta-grid">
-                      <div className="admin-merchant-meta-chip">
-                        <span>收款配置</span>
-                        <strong>{profile ? profile.name : "未提交收款参数"}</strong>
-                        <p className="small-copy">
-                          {profile
-                            ? `${profile.merchantCode} · ${profile.defaultChannelCode}`
-                            : "等待商户在商户中心配置 NovaPay 参数"}
-                        </p>
                       </div>
 
-                      <div className="admin-merchant-meta-chip">
-                        <span>配置进度</span>
-                        <strong>{profile ? "已完成基础接入" : "等待商户补齐参数"}</strong>
-                        <p className="small-copy">
-                          {profile
-                            ? profile.isActive
-                              ? "该商户商品可直接使用这套配置收款。"
-                              : "参数已保存，但目前不会参与下单收款。"
-                            : "商品绑定前，建议先完成收款配置。"}
-                        </p>
-                      </div>
+                      <span className="admin-merchant-summary-profile small-copy">
+                        {profile ? `${profile.name} · ${profile.merchantCode}` : "未提交收款参数"}
+                      </span>
 
-                      <div className="admin-merchant-meta-chip">
-                        <span>最近变更</span>
-                        <strong>{formatDateTime(profile?.updatedAt ?? merchant.updatedAt)}</strong>
-                        <p className="small-copy">
-                          {profile ? "最近更新收款参数" : `入驻时间 ${formatDateTime(merchant.createdAt)}`}
-                        </p>
-                      </div>
+                      <span className="admin-merchant-summary-time small-copy">
+                        {formatDateTime(profile?.updatedAt ?? merchant.updatedAt)}
+                      </span>
 
-                      <div className="admin-merchant-meta-chip">
-                        <span>店铺入口</span>
-                        <strong>
-                          <Link href={buildStorefrontPath(merchant.slug ?? merchant.id)} className="button-link">
-                            查看店铺
-                          </Link>
-                        </strong>
-                        <p className="small-copy">专属 `/s/{merchant.slug ?? merchant.id}` 前台链接</p>
-                      </div>
-                    </div>
+                      <Link
+                        href={buildStorefrontPath(merchant.slug ?? merchant.id)}
+                        className="button-link admin-merchant-summary-store"
+                      >
+                        查看店铺
+                      </Link>
+
+                      <span className="admin-merchant-summary-caret" aria-hidden="true">⌄</span>
+                    </summary>
 
                     <div className="admin-merchant-account-actions">
                       <div className="admin-compact-actions">
@@ -2495,6 +2508,10 @@ function MerchantsSection({
                           activeLabel="停用账号"
                           inactiveLabel="启用账号"
                         />
+                        <span className="small-copy">
+                          {merchant.storeAnnouncementEnabled ? "公告展示中" : "公告未启用"} · 专属
+                          {" "}/s/{merchant.slug ?? merchant.id}
+                        </span>
                       </div>
 
                       <form action={updateMerchantAccountAction} className="admin-compact-form admin-merchant-account-form">
@@ -2571,7 +2588,7 @@ function MerchantsSection({
                         </div>
                       </form>
                     </div>
-                  </article>
+                  </details>
                 );
               })}
             </div>
@@ -3181,136 +3198,70 @@ export function AdminConsoleView({
 
   return (
     <div className="admin-route admin-console-shell">
-      <aside className="admin-sidebar">
+      <aside className="admin-sidebar admin-sidebar-classic">
         <div className="admin-sidebar-brand">
           <div className="admin-sidebar-logo">N</div>
           <div>
             <p className="admin-sidebar-kicker">NoveShop</p>
-            <h2>HANOCUN</h2>
+            <h2>管理控制台</h2>
           </div>
         </div>
 
-        <div className="admin-sidebar-group">
-          <p className="admin-sidebar-title">Navigation</p>
-          <div className="admin-sidebar-cluster-list">
-            {ADMIN_NAV_GROUPS.map((group) => (
-              <section
-                key={group.key}
-                className={`admin-sidebar-cluster${currentGroup.key === group.key ? " active" : ""}`}
-              >
-                <div className="admin-sidebar-cluster-head">
-                  <span>{group.kicker}</span>
-                  <strong>{group.label}</strong>
-                  <p>{group.description}</p>
-                </div>
+        <nav className="admin-menu">
+          {ADMIN_NAV_GROUPS.map((group) => (
+            <div key={group.key} className="admin-menu-group">
+              <p className="admin-menu-group-label">{group.label}</p>
+              {group.tabs.map((tab) => {
+                const active = currentTab === tab;
+                return (
+                  <div key={tab} className="admin-menu-item-wrap">
+                    <Link
+                      href={buildAdminHref(tab)}
+                      className={`admin-menu-item${active ? " active" : ""}`}
+                    >
+                      <span className="admin-menu-icon">{ADMIN_TAB_META[tab].icon}</span>
+                      <span className="admin-menu-label">{ADMIN_TAB_META[tab].label}</span>
+                    </Link>
 
-                <div className="admin-sidebar-branch-list">
-                  {group.tabs.map((tab) => (
-                    <div key={tab} className={`admin-sidebar-branch${currentTab === tab ? " active" : ""}`}>
-                      <Link
-                        href={buildAdminHref(tab)}
-                        className={`admin-sidebar-link${currentTab === tab ? " active" : ""}`}
-                      >
-                        <span className="admin-sidebar-icon">{ADMIN_TAB_META[tab].icon}</span>
-                        <span className="admin-sidebar-link-copy">
-                          <strong>{ADMIN_TAB_META[tab].label}</strong>
-                          <small>{ADMIN_TAB_META[tab].title}</small>
-                        </span>
-                        {currentTab === tab ? (
-                          <span className="admin-sidebar-link-badge">{currentSections.length}</span>
-                        ) : null}
-                      </Link>
+                    {active && currentTabViews.length > 1 ? (
+                      <div className="admin-menu-subnav">
+                        {currentTabViews.map((view) => (
+                          <Link
+                            key={view.key}
+                            href={view.href}
+                            className={`admin-menu-subitem${currentView.key === view.key ? " active" : ""}`}
+                          >
+                            {view.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
 
-                      {currentTab === tab ? (
-                        <>
-                          {currentTabViews.length > 1 ? (
-                            <nav className="admin-sidebar-subview-nav">
-                              {currentTabViews.map((view) => (
-                                <Link
-                                  key={view.key}
-                                  href={view.href}
-                                  className={`admin-sidebar-subview-link${currentView.key === view.key ? " active" : ""}`}
-                                >
-                                  <strong>{view.label}</strong>
-                                  <small>{view.description}</small>
-                                </Link>
-                              ))}
-                            </nav>
-                          ) : null}
-
-                          <nav className="admin-sidebar-section-nav admin-sidebar-section-nav-nested">
-                            {currentSections.map((section, index) => (
-                              <a key={section.id} href={`#${section.id}`} className="admin-sidebar-section-link nested">
-                                <span className="admin-sidebar-section-index">{String(index + 1).padStart(2, "0")}</span>
-                                <span className="admin-sidebar-section-copy">
-                                  <strong>{section.label}</strong>
-                                  <small>{section.description}</small>
-                                </span>
-                              </a>
-                            ))}
-                          </nav>
-                        </>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </div>
-
-        <div className="admin-sidebar-group">
-          <p className="admin-sidebar-title">Shortcuts</p>
-          <nav className="admin-sidebar-nav">
-            <Link href="/" className="admin-sidebar-link">
-              <span className="admin-sidebar-icon">店</span>
-              <span className="admin-sidebar-link-copy">
-                <strong>前台首页</strong>
-                <small>查看平台店铺当前展示效果</small>
-              </span>
+          <div className="admin-menu-group">
+            <p className="admin-menu-group-label">快捷入口</p>
+            <Link href="/" className="admin-menu-item">
+              <span className="admin-menu-icon">店</span>
+              <span className="admin-menu-label">前台首页</span>
             </Link>
-            <Link href="/query" className="admin-sidebar-link">
-              <span className="admin-sidebar-icon">查</span>
-              <span className="admin-sidebar-link-copy">
-                <strong>订单查询</strong>
-                <small>按订单号或邮箱快速查单</small>
-              </span>
+            <Link href="/query" className="admin-menu-item">
+              <span className="admin-menu-icon">查</span>
+              <span className="admin-menu-label">订单查询</span>
             </Link>
-          </nav>
-        </div>
-
-        <article className="admin-sidebar-panel">
-          <p className="admin-sidebar-title">Bridge</p>
-          <h3>NovaPay 已接入</h3>
-          <p className="muted-copy">当前后台使用同目录 NovaPay 商户接口创建支付单，并通过业务回调自动发货。</p>
-
-          <div className="admin-sidebar-meta">
-            <div>
-              <span>当前分组</span>
-              <strong>{currentGroup.label}</strong>
-            </div>
-            <div>
-              <span>当前模块</span>
-              <strong>{tabMeta.label}</strong>
-            </div>
-            <div>
-              <span>默认商户</span>
-              <strong>{defaultPaymentProfile?.name || "未配置"}</strong>
-            </div>
-            <div>
-              <span>NovaPay 地址</span>
-              <strong>{env.novaPayBaseUrl}</strong>
-            </div>
-            <div>
-              <span>启用商户</span>
-              <strong>{activePaymentProfiles.length}</strong>
-            </div>
-            <div>
-              <span>注册商户</span>
-              <strong>{merchantAccounts.length}</strong>
-            </div>
           </div>
-        </article>
+        </nav>
+
+        <div className="admin-sidebar-foot">
+          <span className="admin-sidebar-foot-dot" aria-hidden="true" />
+          <div>
+            <strong>NovaPay 已接入</strong>
+            <small>默认商户：{defaultPaymentProfile?.name || "未配置"}</small>
+          </div>
+        </div>
       </aside>
 
       <div className="admin-console-main">

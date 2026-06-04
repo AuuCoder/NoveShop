@@ -5,6 +5,7 @@ import { PaymentOperationsView } from "@/app/payment-operations-view";
 import { ImageUploadField } from "@/app/image-upload-field";
 import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
+import { FormDialog } from "@/app/components/form-dialog";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -1246,12 +1247,12 @@ function MerchantProductConfigurationArticle({
         )}
       </div>
 
-      <div className="admin-subsection">
-        <div className="admin-subsection-head">
-          <h3>编辑商品基础信息</h3>
-          <p className="small-copy">把常改字段集中在这里，状态和模式都改成下拉，不再铺满整页。</p>
-        </div>
-
+      <FormDialog
+        triggerLabel="编辑商品基础信息"
+        triggerClassName="button-secondary"
+        title="编辑商品基础信息"
+        description="名称、详情、封面、分类、状态等。"
+      >
         <form action={updateMerchantProductAction} className="inline-form">
           <MerchantTabInput tab="products" returnTo={returnTo} />
           <input type="hidden" name="productId" value={product.id} />
@@ -1333,7 +1334,7 @@ function MerchantProductConfigurationArticle({
             </button>
           </div>
         </form>
-      </div>
+      </FormDialog>
 
       <div className="admin-subsection">
         <div className="admin-subsection-head">
@@ -1369,6 +1370,12 @@ function MerchantProductConfigurationArticle({
             </form>
 
             {selectedSku ? (
+              <FormDialog
+                triggerLabel={`编辑选中 SKU：${selectedSku.name}`}
+                triggerClassName="button-secondary"
+                title={`编辑 SKU · ${selectedSku.name}`}
+                description="修改名称、售价、阶梯价与启用状态。"
+              >
               <form action={updateMerchantSkuAction} className="admin-sku-card">
                 <MerchantTabInput tab="products" returnTo={returnTo} />
                 <input type="hidden" name="skuId" value={selectedSku.id} />
@@ -1431,48 +1438,51 @@ function MerchantProductConfigurationArticle({
                   </button>
                 </div>
               </form>
+              </FormDialog>
             ) : null}
 
-            <form action={createMerchantSkuAction} className="admin-sku-create">
-              <MerchantTabInput tab="products" returnTo={returnTo} />
-              <input type="hidden" name="productId" value={product.id} />
-              <input type="hidden" name="productSlug" value={product.slug} />
+            <FormDialog
+              triggerLabel="新增 SKU"
+              triggerClassName="button"
+              title="新增 SKU"
+              description="继续往这个商品下挂更多规格"
+            >
+              <form action={createMerchantSkuAction} className="admin-sku-create">
+                <MerchantTabInput tab="products" returnTo={returnTo} />
+                <input type="hidden" name="productId" value={product.id} />
+                <input type="hidden" name="productSlug" value={product.slug} />
 
-              <div className="admin-subsection-head">
-                <h3>新增 SKU</h3>
-                <p className="small-copy">继续往这个商品下挂更多规格</p>
-              </div>
-
-              <div className="inline-grid">
-                <div className="field">
-                  <label>SKU 名称</label>
-                  <input name="name" placeholder="例如 年卡" required />
+                <div className="inline-grid">
+                  <div className="field">
+                    <label>SKU 名称</label>
+                    <input name="name" placeholder="例如 年卡" required />
+                  </div>
+                  <div className="field">
+                    <label>SKU 售价</label>
+                    <input name="price" placeholder="99.00" required />
+                  </div>
                 </div>
+
                 <div className="field">
-                  <label>SKU 售价</label>
-                  <input name="price" placeholder="99.00" required />
+                  <label>SKU 说明</label>
+                  <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
                 </div>
-              </div>
 
-              <div className="field">
-                <label>SKU 说明</label>
-                <input name="summary" placeholder="例如 官方充值 / 可叠加活动" />
-              </div>
+                <div className="field">
+                  <label>阶梯价规则</label>
+                  <SkuPricingTierEditor name="pricingTiers" />
+                </div>
 
-              <div className="field">
-                <label>阶梯价规则</label>
-                <SkuPricingTierEditor name="pricingTiers" />
-              </div>
+                <label className="admin-check-row">
+                  <input type="checkbox" name="enabled" defaultChecked />
+                  <span>创建后立即启用</span>
+                </label>
 
-              <label className="admin-check-row">
-                <input type="checkbox" name="enabled" defaultChecked />
-                <span>创建后立即启用</span>
-              </label>
-
-              <button type="submit" className="button">
-                添加 SKU
+                <button type="submit" className="button">
+                  添加 SKU
               </button>
             </form>
+            </FormDialog>
           </>
         ) : singleModeSku ? (
           <>
@@ -1572,19 +1582,26 @@ function MerchantCategoryManagerArticle({
           <p className="admin-section-kicker">Categories</p>
           <h2 className="order-title">商品分类管理</h2>
         </div>
-        <span className="badge muted">仅对我的店铺生效</span>
+        <FormDialog
+          triggerLabel="新增分类"
+          triggerClassName="button-secondary"
+          title="新增分类"
+          description="添加后，创建或编辑商品时即可归类。"
+        >
+          <form action={createMerchantCategoryAction} className="inline-form">
+            <MerchantTabInput tab="products" returnTo={returnTo} />
+            <div className="field">
+              <label htmlFor="new-category-name">分类名称</label>
+              <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
+            </div>
+            <div className="button-row">
+              <button type="submit" className="button">
+                添加分类
+              </button>
+            </div>
+          </form>
+        </FormDialog>
       </div>
-
-      <form action={createMerchantCategoryAction} className="inline-form">
-        <MerchantTabInput tab="products" returnTo={returnTo} />
-        <div className="field">
-          <label htmlFor="new-category-name">新增分类</label>
-          <input id="new-category-name" name="name" placeholder="例如 ChatGPT" required />
-        </div>
-        <button type="submit" className="button-secondary">
-          添加分类
-        </button>
-      </form>
 
       {categories.length === 0 ? (
         <div className="admin-empty-state">
@@ -1668,19 +1685,15 @@ function ProductsSection({
                 <div>
                   <p className="admin-section-kicker">Create</p>
                   <h2 className="order-title">创建商品</h2>
+                  <p className="small-copy">新建商品并初始化首个默认规格，默认绑定到我的商户。</p>
                 </div>
-                <span className="badge muted">默认绑定到我的商户</span>
-              </div>
-
-              {!paymentProfile ? (
-                <div className="admin-empty-state">
-                  <strong>先配置 NovaPay 参数</strong>
-                  <p>先到收款模块把你的商户号和密钥保存好，系统才能把你创建的商品绑定到自己的收款商户。</p>
-                  <Link href={buildMerchantHref("payments")} className="button-secondary">
-                    去配置收款
-                  </Link>
-                </div>
-              ) : (
+                {paymentProfile ? (
+                  <FormDialog
+                    triggerLabel="创建商品"
+                    triggerClassName="button"
+                    title="创建商品"
+                    description="商品负责展示，首个 SKU 决定价格与库存。"
+                  >
                 <form action={createMerchantProductAction} className="inline-form">
                   <MerchantTabInput tab="products" returnTo={returnTo} />
 
@@ -1773,11 +1786,26 @@ function ProductsSection({
                     </div>
                   </div>
 
-                  <button type="submit" className="button">
-                    保存商品
-                  </button>
+                  <div className="button-row">
+                    <button type="submit" className="button">
+                      保存商品
+                    </button>
+                  </div>
                 </form>
-              )}
+                  </FormDialog>
+                ) : (
+                  <Link href={buildMerchantHref("payments")} className="button-secondary">
+                    去配置收款
+                  </Link>
+                )}
+              </div>
+
+              {!paymentProfile ? (
+                <div className="admin-empty-state">
+                  <strong>先配置 NovaPay 参数</strong>
+                  <p>先到收款模块把你的商户号和密钥保存好，系统才能把你创建的商品绑定到自己的收款商户。</p>
+                </div>
+              ) : null}
             </article>
           ) : null}
 
@@ -2021,16 +2049,15 @@ function InventorySection({
                 <div>
                   <p className="admin-section-kicker">Import</p>
                   <h2 className="order-title">商户入库</h2>
+                  <p className="small-copy">只允许给自己名下的 SKU 导入卡密库存。</p>
                 </div>
-                <span className="badge muted">只允许导入自己的 SKU</span>
-              </div>
-
-              {availableProducts.length === 0 ? (
-                <div className="admin-empty-state">
-                  <strong>还没有可入库的商品</strong>
-                  <p>先去商品模块创建商品和 SKU，商户才能给自己的规格导入卡密库存。</p>
-                </div>
-              ) : (
+                {availableProducts.length > 0 ? (
+                  <FormDialog
+                    triggerLabel="导入卡密库存"
+                    triggerClassName="button"
+                    title="商户入库"
+                    description="选择自己名下的 SKU 后，一行一条粘贴卡密。"
+                  >
                 <form action={importMerchantCardsAction} className="inline-form">
                   <MerchantTabInput tab="inventory" returnTo={returnTo} />
 
@@ -2067,15 +2094,22 @@ function InventorySection({
                     />
                   </div>
 
-                  <p className="small-copy">
-                    这里的入库权限已经按商户隔离，你只能给自己名下商品的 SKU 入库，不会影响其他商户。
-                  </p>
-
-                  <button type="submit" className="button">
-                    导入卡密库存
-                  </button>
+                  <div className="button-row">
+                    <button type="submit" className="button">
+                      导入卡密库存
+                    </button>
+                  </div>
                 </form>
-              )}
+                  </FormDialog>
+                ) : null}
+              </div>
+
+              {availableProducts.length === 0 ? (
+                <div className="admin-empty-state">
+                  <strong>还没有可入库的商品</strong>
+                  <p>先去商品模块创建商品和 SKU，商户才能给自己的规格导入卡密库存。</p>
+                </div>
+              ) : null}
             </article>
           ) : null}
 
@@ -2568,24 +2602,35 @@ function OrdersSection({
                   <p>订单发起后，这里会按支付通道汇总订单数量、成交额和最近交易时间。</p>
                 </div>
               ) : (
-                <div className="admin-sku-stack">
-                  {insights.channelStats.slice(0, 5).map((channel) => (
-                    <article key={channel.code} className="admin-sku-card">
-                      <div className="admin-sku-head">
-                        <div>
-                          <strong>{channel.code}</strong>
-                          <p className="small-copy">
-                            {channel.orderCount} 笔订单 / {channel.fulfilledCount} 笔成交
-                          </p>
-                        </div>
-                        <span className="badge muted">{describeOrderAmount(channel.paidVolume)}</span>
-                      </div>
-                      <p className="small-copy">
-                        待支付 {channel.pendingCount} 笔 · 最近订单{" "}
-                        {channel.lastOrderedAt ? formatDateTime(channel.lastOrderedAt) : "暂无"}
-                      </p>
-                    </article>
-                  ))}
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-ops-table">
+                    <thead>
+                      <tr>
+                        <th>通道</th>
+                        <th>订单</th>
+                        <th>成交</th>
+                        <th>待支付</th>
+                        <th>成交额</th>
+                        <th>最近订单</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {insights.channelStats.slice(0, 5).map((channel) => (
+                        <tr key={channel.code}>
+                          <td className="admin-ops-table-cell">
+                            <strong>{channel.code}</strong>
+                          </td>
+                          <td>{channel.orderCount}</td>
+                          <td>{channel.fulfilledCount}</td>
+                          <td>{channel.pendingCount}</td>
+                          <td>{describeOrderAmount(channel.paidVolume)}</td>
+                          <td className="admin-ops-table-time">
+                            {channel.lastOrderedAt ? formatDateTime(channel.lastOrderedAt) : "暂无"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </article>
@@ -2778,21 +2823,31 @@ function CustomersSection({
                   <p>等客户发生第二次下单后，这里会优先展示最有价值的复购人群。</p>
                 </div>
               ) : (
-                <div className="admin-sku-stack">
-                  {filteredRepeatCustomers.slice(0, 5).map((customer) => (
-                    <article key={customer.email} className="admin-sku-card">
-                      <div className="admin-sku-head">
-                        <div>
-                          <strong>{customer.email}</strong>
-                          <p className="small-copy">
-                            {customer.orderCount} 笔订单 / {customer.fulfilledCount} 笔成交
-                          </p>
-                        </div>
-                        <span className="badge success">{describeOrderAmount(customer.paidVolume)}</span>
-                      </div>
-                      <p className="small-copy">最近成交时间：{formatDateTime(customer.lastOrderedAt)}</p>
-                    </article>
-                  ))}
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-ops-table">
+                    <thead>
+                      <tr>
+                        <th>客户</th>
+                        <th>订单</th>
+                        <th>成交</th>
+                        <th>成交额</th>
+                        <th>最近成交</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRepeatCustomers.slice(0, 5).map((customer) => (
+                        <tr key={customer.email}>
+                          <td className="admin-ops-table-cell">
+                            <strong>{customer.email}</strong>
+                          </td>
+                          <td>{customer.orderCount}</td>
+                          <td>{customer.fulfilledCount}</td>
+                          <td>{describeOrderAmount(customer.paidVolume)}</td>
+                          <td className="admin-ops-table-time">{formatDateTime(customer.lastOrderedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </article>
@@ -2813,21 +2868,29 @@ function CustomersSection({
                   <p>当存在未完成支付的订单时，这里会帮你快速定位还在等待支付的客户。</p>
                 </div>
               ) : (
-                <div className="admin-sku-stack">
-                  {filteredPendingCustomers.slice(0, 5).map((customer) => (
-                    <article key={customer.email} className="admin-sku-card">
-                      <div className="admin-sku-head">
-                        <div>
-                          <strong>{customer.email}</strong>
-                          <p className="small-copy">
-                            待支付 {customer.pendingCount} 笔 / 总订单 {customer.orderCount} 笔
-                          </p>
-                        </div>
-                        <span className="badge warning">待转化</span>
-                      </div>
-                      <p className="small-copy">最近下单时间：{formatDateTime(customer.lastOrderedAt)}</p>
-                    </article>
-                  ))}
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-ops-table">
+                    <thead>
+                      <tr>
+                        <th>客户</th>
+                        <th>待支付</th>
+                        <th>总订单</th>
+                        <th>最近下单</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPendingCustomers.slice(0, 5).map((customer) => (
+                        <tr key={customer.email}>
+                          <td className="admin-ops-table-cell">
+                            <strong>{customer.email}</strong>
+                          </td>
+                          <td>{customer.pendingCount}</td>
+                          <td>{customer.orderCount}</td>
+                          <td className="admin-ops-table-time">{formatDateTime(customer.lastOrderedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </article>
@@ -3047,23 +3110,35 @@ function FinanceSection({
                   <p>先完成商品创建和订单成交，这里会自动形成商品贡献排行。</p>
                 </div>
               ) : (
-                <div className="admin-sku-stack">
-                  {financeView.productStats.slice(0, 5).map((product) => (
-                    <article key={product.id} className="admin-sku-card">
-                      <div className="admin-sku-head">
-                        <div>
-                          <strong>{product.name}</strong>
-                          <p className="small-copy">
-                            {product.orderCount} 笔订单 / {product.fulfilledCount} 笔成交
-                          </p>
-                        </div>
-                        <span className="badge success">{describeOrderAmount(product.paidVolume)}</span>
-                      </div>
-                      <p className="small-copy">
-                        待支付 {product.pendingCount} 笔 / 失败 {product.failedCount} 笔 / 过期 {product.expiredCount} 笔
-                      </p>
-                    </article>
-                  ))}
+                <div className="table-wrap admin-table-wrap">
+                  <table className="admin-ops-table">
+                    <thead>
+                      <tr>
+                        <th>商品</th>
+                        <th>订单</th>
+                        <th>成交</th>
+                        <th>待支付</th>
+                        <th>失败 / 过期</th>
+                        <th>成交额</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {financeView.productStats.slice(0, 5).map((product) => (
+                        <tr key={product.id}>
+                          <td className="admin-ops-table-cell">
+                            <strong>{product.name}</strong>
+                          </td>
+                          <td>{product.orderCount}</td>
+                          <td>{product.fulfilledCount}</td>
+                          <td>{product.pendingCount}</td>
+                          <td>
+                            {product.failedCount} / {product.expiredCount}
+                          </td>
+                          <td>{describeOrderAmount(product.paidVolume)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </article>
@@ -3741,71 +3816,45 @@ function MerchantSidebarGroupNav({
   tabs,
   currentTab,
   currentView,
-  currentSections,
 }: {
   title: string;
   tabs: readonly MerchantTab[];
   currentTab: MerchantTab;
   currentView: MerchantTabView;
-  currentSections: ReturnType<typeof getMerchantPageSections>;
 }) {
   const currentTabViews = getMerchantTabViews(currentTab);
 
   return (
-    <div className="admin-sidebar-group">
-      <p className="admin-sidebar-title">{title}</p>
-      <div className="admin-sidebar-branch-list">
-        {tabs.map((tab) => (
-          <div key={tab} className={`admin-sidebar-branch${currentTab === tab ? " active" : ""}`}>
+    <div className="admin-menu-group">
+      <p className="admin-menu-group-label">{title}</p>
+      {tabs.map((tab) => {
+        const active = currentTab === tab;
+        return (
+          <div key={tab} className="admin-menu-item-wrap">
             <Link
               href={buildMerchantHref(tab)}
-              className={`admin-sidebar-link${currentTab === tab ? " active" : ""}`}
+              className={`admin-menu-item${active ? " active" : ""}`}
             >
-              <span className="admin-sidebar-icon">{MERCHANT_TAB_META[tab].icon}</span>
-              <span className="admin-sidebar-link-copy">
-                <strong>{MERCHANT_TAB_META[tab].label}</strong>
-                <small>{MERCHANT_TAB_META[tab].title}</small>
-              </span>
-              {currentTab === tab && currentSections.length > 0 ? (
-                <span className="admin-sidebar-link-badge">{currentSections.length}</span>
-              ) : null}
+              <span className="admin-menu-icon">{MERCHANT_TAB_META[tab].icon}</span>
+              <span className="admin-menu-label">{MERCHANT_TAB_META[tab].label}</span>
             </Link>
 
-            {currentTab === tab ? (
-              <>
-                {currentTabViews.length > 1 ? (
-                  <nav className="admin-sidebar-subview-nav">
-                    {currentTabViews.map((view) => (
-                      <Link
-                        key={view.key}
-                        href={view.href}
-                        className={`admin-sidebar-subview-link${currentView.key === view.key ? " active" : ""}`}
-                      >
-                        <strong>{view.label}</strong>
-                        <small>{view.description}</small>
-                      </Link>
-                    ))}
-                  </nav>
-                ) : null}
-
-                {currentSections.length > 0 ? (
-                  <nav className="admin-sidebar-section-nav admin-sidebar-section-nav-nested">
-                    {currentSections.map((section, index) => (
-                      <a key={section.id} href={`#${section.id}`} className="admin-sidebar-section-link nested">
-                        <span className="admin-sidebar-section-index">{String(index + 1).padStart(2, "0")}</span>
-                        <span className="admin-sidebar-section-copy">
-                          <strong>{section.label}</strong>
-                          <small>{section.description}</small>
-                        </span>
-                      </a>
-                    ))}
-                  </nav>
-                ) : null}
-              </>
+            {active && currentTabViews.length > 1 ? (
+              <div className="admin-menu-subnav">
+                {currentTabViews.map((view) => (
+                  <Link
+                    key={view.key}
+                    href={view.href}
+                    className={`admin-menu-subitem${currentView.key === view.key ? " active" : ""}`}
+                  >
+                    {view.label}
+                  </Link>
+                ))}
+              </div>
             ) : null}
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -4121,7 +4170,7 @@ export function MerchantConsoleView({
 
   return (
     <div className="admin-route admin-console-shell">
-      <aside className="admin-sidebar">
+      <aside className="admin-sidebar admin-sidebar-classic">
         <div className="admin-sidebar-brand">
           <div className="admin-sidebar-logo">M</div>
           <div>
@@ -4130,68 +4179,41 @@ export function MerchantConsoleView({
           </div>
         </div>
 
-        <MerchantSidebarGroupNav
-          title="Operations"
-          tabs={MERCHANT_OPERATIONS_TABS}
-          currentTab={currentTab}
-          currentView={currentView}
-          currentSections={currentSections}
-        />
+        <nav className="admin-menu">
+          <MerchantSidebarGroupNav
+            title="经营"
+            tabs={MERCHANT_OPERATIONS_TABS}
+            currentTab={currentTab}
+            currentView={currentView}
+          />
 
-        <MerchantSidebarGroupNav
-          title="Foundation"
-          tabs={MERCHANT_CONFIGURATION_TABS}
-          currentTab={currentTab}
-          currentView={currentView}
-          currentSections={currentSections}
-        />
+          <MerchantSidebarGroupNav
+            title="基础设施"
+            tabs={MERCHANT_CONFIGURATION_TABS}
+            currentTab={currentTab}
+            currentView={currentView}
+          />
 
-        <div className="admin-sidebar-group">
-          <p className="admin-sidebar-title">Shortcuts</p>
-          <nav className="admin-sidebar-nav">
-            <Link href="/" className="admin-sidebar-link">
-              <span className="admin-sidebar-icon">店</span>
-              前台首页
+          <div className="admin-menu-group">
+            <p className="admin-menu-group-label">快捷入口</p>
+            <Link href="/" className="admin-menu-item">
+              <span className="admin-menu-icon">店</span>
+              <span className="admin-menu-label">前台首页</span>
             </Link>
-            <Link href="/query" className="admin-sidebar-link">
-              <span className="admin-sidebar-icon">查</span>
-              全站查单
+            <Link href="/query" className="admin-menu-item">
+              <span className="admin-menu-icon">查</span>
+              <span className="admin-menu-label">全站查单</span>
             </Link>
-          </nav>
-        </div>
-
-        <article className="admin-sidebar-panel">
-          <p className="admin-sidebar-title">Merchant</p>
-          <h3>{merchant.name}</h3>
-          <p className="muted-copy">当前商户后台已经拆成企业化模块，商品、订单、客户、财务和收款各自独立成路由。</p>
-
-          <div className="admin-sidebar-meta">
-            <div>
-              <span>当前模块</span>
-              <strong>{tabMeta.label}</strong>
-            </div>
-            <div>
-              <span>当前子页</span>
-              <strong>{currentView.label}</strong>
-            </div>
-            <div>
-              <span>收款状态</span>
-              <strong>{getPaymentProfileLabel(paymentProfile)}</strong>
-            </div>
-            <div>
-              <span>绑定商品</span>
-              <strong>{dashboard.stats.productCount}</strong>
-            </div>
-            <div>
-              <span>订单总量</span>
-              <strong>{dashboard.stats.totalOrders}</strong>
-            </div>
-            <div>
-              <span>低库存 SKU</span>
-              <strong>{insights.lowStockRows.length}</strong>
-            </div>
           </div>
-        </article>
+        </nav>
+
+        <div className="admin-sidebar-foot">
+          <span className="admin-sidebar-foot-dot" aria-hidden="true" />
+          <div>
+            <strong>{merchant.name}</strong>
+            <small>收款：{getPaymentProfileLabel(paymentProfile)}</small>
+          </div>
+        </div>
       </aside>
 
       <div className="admin-console-main">

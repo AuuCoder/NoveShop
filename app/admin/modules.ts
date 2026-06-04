@@ -327,15 +327,11 @@ export const ADMIN_TAB_VIEWS: Record<AdminTab, readonly AdminTabView[]> = {
     {
       key: "overview",
       label: "商户总览",
-      description: "总览商户接入、公告、账号与支付配置。",
+      description: "查看接入概况与商户账户,公告/新增/支付配置见左侧子页。",
       href: "/admin/merchants",
       sectionIds: [
         "merchants-summary",
-        "merchants-announcement",
-        "merchants-create-account",
-        "merchants-create-profile",
         "merchants-accounts",
-        "merchants-profiles",
       ],
     },
     {
@@ -364,19 +360,12 @@ export const ADMIN_TAB_VIEWS: Record<AdminTab, readonly AdminTabView[]> = {
     {
       key: "overview",
       label: "支付总览",
-      description: "完整查看多商户支付链路全景。",
+      description: "先看筛选、异常优先级和订单指挥,分析/控制/审计见左侧子页。",
       href: "/admin/payments",
       sectionIds: [
         "payment-filters",
         "payment-priority",
         "payment-command",
-        "payment-control",
-        "payment-sla",
-        "payment-latency",
-        "payment-reconcile",
-        "payment-audit",
-        "payment-pipeline",
-        "payment-attempts",
       ],
     },
     {

@@ -1,8 +1,24 @@
 import { isStoredUploadPath } from "@/lib/uploads";
 
+export type CalloutVariant = "success" | "warning" | "danger" | "info";
+
 export type ContentBlock =
   | { type: "text"; text: string }
-  | { type: "image"; url: string };
+  | { type: "image"; url: string }
+  | { type: "callout"; variant: CalloutVariant; text: string };
+
+const CALLOUT_VARIANTS: ReadonlySet<string> = new Set([
+  "success",
+  "warning",
+  "danger",
+  "info",
+]);
+
+function normalizeCalloutVariant(value: unknown): CalloutVariant {
+  return typeof value === "string" && CALLOUT_VARIANTS.has(value)
+    ? (value as CalloutVariant)
+    : "info";
+}
 
 const MAX_BLOCKS = 50;
 const MAX_TEXT_LENGTH = 5000;
@@ -54,6 +70,19 @@ export function parseContentBlocks(value: string | null | undefined): ContentBlo
         continue;
       }
       blocks.push({ type: "text", text });
+    } else if (candidate.type === "callout") {
+      if (typeof candidate.text !== "string") {
+        continue;
+      }
+      const text = candidate.text.trim().slice(0, MAX_TEXT_LENGTH);
+      if (!text) {
+        continue;
+      }
+      blocks.push({
+        type: "callout",
+        variant: normalizeCalloutVariant((candidate as { variant?: unknown }).variant),
+        text,
+      });
     } else if (candidate.type === "image") {
       if (typeof candidate.url !== "string") {
         continue;
@@ -133,7 +162,10 @@ export function getContentBlocksPlainText(input: {
   description?: string | null;
 }): string {
   const text = parseContentBlocks(input.contentBlocks)
-    .filter((block): block is Extract<ContentBlock, { type: "text" }> => block.type === "text")
+    .filter(
+      (block): block is Extract<ContentBlock, { type: "text" | "callout" }> =>
+        block.type === "text" || block.type === "callout",
+    )
     .map((block) => block.text)
     .join("\n")
     .trim();

@@ -25,7 +25,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { ContentBlock } from "@/lib/content-blocks";
+import type { ContentBlock, CalloutVariant } from "@/lib/content-blocks";
+import { RichText } from "@/app/components/rich-text";
 import { buildPaymentChannelOptions, isUsdtPaymentChannelCode } from "@/lib/payment-channels";
 import {
   MAX_PUBLIC_ORDER_QUANTITY,
@@ -89,6 +90,26 @@ type StorefrontPaymentChannelGroup = {
 
 function hasStorefrontAnnouncement(announcement: StorefrontAnnouncementSnapshot | null | undefined) {
   return Boolean(announcement?.enabled && (announcement.title || announcement.body));
+}
+
+const CALLOUT_STYLES: Record<CalloutVariant, string> = {
+  success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  warning: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  danger: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300",
+  info: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+};
+
+function CalloutBlock({ variant, text }: { variant: CalloutVariant; text: string }) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border px-4 py-3 text-sm leading-relaxed whitespace-pre-line",
+        CALLOUT_STYLES[variant],
+      )}
+    >
+      <RichText text={text} />
+    </div>
+  );
 }
 
 function formatCurrency(cents: number, language: SiteLanguage) {
@@ -671,8 +692,10 @@ export function ProductDetailView({
                         key={`text-${index}`}
                         className="text-sm leading-relaxed whitespace-pre-line text-foreground/90"
                       >
-                        {block.text}
+                        <RichText text={block.text} />
                       </p>
+                    ) : block.type === "callout" ? (
+                      <CalloutBlock key={`callout-${index}`} variant={block.variant} text={block.text} />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
