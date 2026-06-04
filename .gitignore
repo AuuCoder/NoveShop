@@ -17,3 +17,4 @@ tsconfig.tsbuildinfo
 backups/
 scripts/try-decrypt-keys.mjs
 scripts/fix-payment-profile.mjs
+deploy-run.sh
