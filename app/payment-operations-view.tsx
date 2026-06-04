@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
+import { AutoSubmitSelect } from "@/app/components/auto-submit-select";
 import {
   replayAdminCallbackLogAction,
   refreshAdminPaymentOrderAction,
@@ -2260,6 +2261,12 @@ export function PaymentOperationsView({
   const reviewControlAction = scope === "admin" ? updateControlAuditReviewAction : null;
   const activeFilters = buildActiveFilters(scope, data, paymentProfiles);
   const hasFilters = activeFilters.length > 0;
+  // 管理员端规则：未选定支付商户时，只展示筛选条，不直接铺全量数据。
+  const adminGateBlocked = scope === "admin" && data.filters.paymentProfileId === "all";
+  const showSection = (sectionId: string) =>
+    sectionId === "payment-filters"
+      ? shouldShowPaymentSection(visibleSectionIds, sectionId)
+      : !adminGateBlocked && shouldShowPaymentSection(visibleSectionIds, sectionId);
   const returnTo = buildReturnTo(basePath, data);
   const controlAuditExportHref = buildControlAuditExportHref(scope, data.filters);
   const controlAuditWeeklyExportHref = buildControlAuditWeeklyExportHref(scope, data.filters);
@@ -2289,14 +2296,14 @@ export function PaymentOperationsView({
     merchantHealthCards,
   });
   const showSummaryStrip =
-    shouldShowPaymentSection(visibleSectionIds, "payment-priority") ||
-    shouldShowPaymentSection(visibleSectionIds, "payment-command") ||
-    shouldShowPaymentSection(visibleSectionIds, "payment-control") ||
-    shouldShowPaymentSection(visibleSectionIds, "payment-audit");
+    showSection("payment-priority") ||
+    showSection("payment-command") ||
+    showSection("payment-control") ||
+    showSection("payment-audit");
 
   return (
     <>
-      {shouldShowPaymentSection(visibleSectionIds, "payment-filters") ? (
+      {showSection("payment-filters") ? (
         <section id="payment-filters" className="admin-anchor-target admin-content-grid admin-ops-filter-layout">
         <div className="admin-column-stack">
           <article className="admin-surface">
@@ -2325,7 +2332,7 @@ export function PaymentOperationsView({
                 {scope === "admin" ? (
                   <div className="field">
                     <label htmlFor="adminPaymentProfileId">支付商户</label>
-                    <select
+                    <AutoSubmitSelect
                       id="adminPaymentProfileId"
                       name="paymentProfileId"
                       defaultValue={data.filters.paymentProfileId}
@@ -2336,7 +2343,7 @@ export function PaymentOperationsView({
                           {buildPaymentProfileLabel(profile)}
                         </option>
                       ))}
-                    </select>
+                    </AutoSubmitSelect>
                   </div>
                 ) : null}
 
@@ -2502,7 +2509,18 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-priority") ? (
+      {adminGateBlocked ? (
+        <section className="admin-column-stack">
+          <article className="admin-surface">
+            <div className="admin-empty-state">
+              <strong>请先选择一个支付商户</strong>
+              <p>为避免一次性加载全部商户的支付链路，平台支付工作台默认不铺全量数据。请在上方“支付商户”里选择一个商户后查看其支付尝试、回调、补偿与控制留痕。</p>
+            </div>
+          </article>
+        </section>
+      ) : null}
+
+      {showSection("payment-priority") ? (
         <section
         id="payment-priority"
         className={`admin-anchor-target ${
@@ -2693,7 +2711,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-command") ? (
+      {showSection("payment-command") ? (
         <section id="payment-command" className="admin-anchor-target admin-content-grid admin-ops-wide-grid">
         <div className="admin-column-stack admin-ops-span-full">
           <article className="admin-surface">
@@ -2892,7 +2910,7 @@ export function PaymentOperationsView({
         </article>
       </section> : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-control") ? (
+      {showSection("payment-control") ? (
         <section
         id="payment-control"
         className={`admin-anchor-target ${
@@ -3171,7 +3189,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-sla") ? (
+      {showSection("payment-sla") ? (
         <section id="payment-sla" className="admin-anchor-target admin-content-grid">
         <div className="admin-column-stack">
           <article className="admin-surface">
@@ -3283,7 +3301,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-latency") ? (
+      {showSection("payment-latency") ? (
         <section
         id="payment-latency"
         className={`admin-anchor-target ${
@@ -3404,7 +3422,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-reconcile") ? (
+      {showSection("payment-reconcile") ? (
         <section
         id="payment-reconcile"
         className={`admin-anchor-target ${
@@ -3550,7 +3568,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-audit") ? (
+      {showSection("payment-audit") ? (
         <section
         id="payment-audit"
         className={`admin-anchor-target ${
@@ -3669,7 +3687,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-pipeline") ? (
+      {showSection("payment-pipeline") ? (
         <section id="payment-pipeline" className="admin-anchor-target admin-content-grid">
         <div className="admin-column-stack">
           <article className="admin-surface">
@@ -3801,7 +3819,7 @@ export function PaymentOperationsView({
         </section>
       ) : null}
 
-      {shouldShowPaymentSection(visibleSectionIds, "payment-attempts") ? (
+      {showSection("payment-attempts") ? (
         <section id="payment-attempts" className="admin-anchor-target admin-content-grid admin-ops-wide-grid">
         <div className="admin-column-stack admin-ops-span-full">
           <article className="admin-surface">
