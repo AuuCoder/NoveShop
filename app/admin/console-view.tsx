@@ -7,6 +7,7 @@ import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
 import { FormDialog } from "@/app/components/form-dialog";
 import { AutoSubmitSelect } from "@/app/components/auto-submit-select";
+import { CardImportFields } from "@/app/components/card-import-fields";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -1727,7 +1728,7 @@ function InventorySection({
                       triggerLabel="批量导入"
                       triggerClassName="button"
                       title="批量导入卡密"
-                      description="选择 SKU 后，一行一条粘贴卡密内容。"
+                      description="支持一行一条卡密、整段长文本，或上传发货文件。"
                     >
                   <form action={importCardsAction} className="inline-form">
                     <AdminTabInput tab="inventory" returnTo={inventoryReturnTo} />
@@ -1755,15 +1756,7 @@ function InventorySection({
                       <input id="batchName" name="batchName" placeholder="例如 2026-04 首批" />
                     </div>
 
-                    <div className="field">
-                      <label htmlFor="rawCards">卡密内容</label>
-                      <textarea
-                        id="rawCards"
-                        name="rawCards"
-                        placeholder={"一行一条卡密\nCARD-001\nCARD-002"}
-                        required
-                      />
-                    </div>
+                    <CardImportFields idPrefix="admin-import" />
 
                     <div className="button-row">
                       <button type="submit" className="button">

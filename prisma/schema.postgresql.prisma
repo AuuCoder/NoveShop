@@ -223,6 +223,9 @@ model CardItem {
   sku        ProductSku     @relation(fields: [skuId], references: [id], onDelete: Restrict)
   batchName  String?
   secret     String
+  deliveryFileKey  String?
+  deliveryFileName String?
+  deliveryFileSize Int?
   status     CardItemStatus @default(AVAILABLE)
   orderId    String?
   order      ShopOrder?     @relation(fields: [orderId], references: [id], onDelete: SetNull)

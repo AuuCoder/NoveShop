@@ -6,6 +6,7 @@ import { ImageUploadField } from "@/app/image-upload-field";
 import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
 import { FormDialog } from "@/app/components/form-dialog";
+import { CardImportFields } from "@/app/components/card-import-fields";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -2056,7 +2057,7 @@ function InventorySection({
                     triggerLabel="导入卡密库存"
                     triggerClassName="button"
                     title="商户入库"
-                    description="选择自己名下的 SKU 后，一行一条粘贴卡密。"
+                    description="支持一行一条卡密、整段长文本，或上传发货文件。"
                   >
                 <form action={importMerchantCardsAction} className="inline-form">
                   <MerchantTabInput tab="inventory" returnTo={returnTo} />
@@ -2084,15 +2085,7 @@ function InventorySection({
                     <input id="merchantInventoryBatchName" name="batchName" placeholder="例如 商户自采 2026-04" />
                   </div>
 
-                  <div className="field">
-                    <label htmlFor="merchantInventoryCards">卡密内容</label>
-                    <textarea
-                      id="merchantInventoryCards"
-                      name="rawCards"
-                      placeholder={"一行一条卡密\nCARD-001\nCARD-002"}
-                      required
-                    />
-                  </div>
+                  <CardImportFields idPrefix="merchant-import" />
 
                   <div className="button-row">
                     <button type="submit" className="button">

@@ -8,3 +8,4 @@ npm-debug.log*
 prisma/dev.db
 README.md
 /uploads/
+/delivery-files/

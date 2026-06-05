@@ -10805,8 +10805,18 @@ export namespace Prisma {
 
   export type AggregateCardItem = {
     _count: CardItemCountAggregateOutputType | null
+    _avg: CardItemAvgAggregateOutputType | null
+    _sum: CardItemSumAggregateOutputType | null
     _min: CardItemMinAggregateOutputType | null
     _max: CardItemMaxAggregateOutputType | null
+  }
+
+  export type CardItemAvgAggregateOutputType = {
+    deliveryFileSize: number | null
+  }
+
+  export type CardItemSumAggregateOutputType = {
+    deliveryFileSize: number | null
   }
 
   export type CardItemMinAggregateOutputType = {
@@ -10815,6 +10825,9 @@ export namespace Prisma {
     skuId: string | null
     batchName: string | null
     secret: string | null
+    deliveryFileKey: string | null
+    deliveryFileName: string | null
+    deliveryFileSize: number | null
     status: $Enums.CardItemStatus | null
     orderId: string | null
     reservedAt: Date | null
@@ -10829,6 +10842,9 @@ export namespace Prisma {
     skuId: string | null
     batchName: string | null
     secret: string | null
+    deliveryFileKey: string | null
+    deliveryFileName: string | null
+    deliveryFileSize: number | null
     status: $Enums.CardItemStatus | null
     orderId: string | null
     reservedAt: Date | null
@@ -10843,6 +10859,9 @@ export namespace Prisma {
     skuId: number
     batchName: number
     secret: number
+    deliveryFileKey: number
+    deliveryFileName: number
+    deliveryFileSize: number
     status: number
     orderId: number
     reservedAt: number
@@ -10853,12 +10872,23 @@ export namespace Prisma {
   }
 
 
+  export type CardItemAvgAggregateInputType = {
+    deliveryFileSize?: true
+  }
+
+  export type CardItemSumAggregateInputType = {
+    deliveryFileSize?: true
+  }
+
   export type CardItemMinAggregateInputType = {
     id?: true
     productId?: true
     skuId?: true
     batchName?: true
     secret?: true
+    deliveryFileKey?: true
+    deliveryFileName?: true
+    deliveryFileSize?: true
     status?: true
     orderId?: true
     reservedAt?: true
@@ -10873,6 +10903,9 @@ export namespace Prisma {
     skuId?: true
     batchName?: true
     secret?: true
+    deliveryFileKey?: true
+    deliveryFileName?: true
+    deliveryFileSize?: true
     status?: true
     orderId?: true
     reservedAt?: true
@@ -10887,6 +10920,9 @@ export namespace Prisma {
     skuId?: true
     batchName?: true
     secret?: true
+    deliveryFileKey?: true
+    deliveryFileName?: true
+    deliveryFileSize?: true
     status?: true
     orderId?: true
     reservedAt?: true
@@ -10934,6 +10970,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: CardItemAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: CardItemSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: CardItemMinAggregateInputType
@@ -10964,6 +11012,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: CardItemCountAggregateInputType | true
+    _avg?: CardItemAvgAggregateInputType
+    _sum?: CardItemSumAggregateInputType
     _min?: CardItemMinAggregateInputType
     _max?: CardItemMaxAggregateInputType
   }
@@ -10974,6 +11024,9 @@ export namespace Prisma {
     skuId: string
     batchName: string | null
     secret: string
+    deliveryFileKey: string | null
+    deliveryFileName: string | null
+    deliveryFileSize: number | null
     status: $Enums.CardItemStatus
     orderId: string | null
     reservedAt: Date | null
@@ -10981,6 +11034,8 @@ export namespace Prisma {
     createdAt: Date
     updatedAt: Date
     _count: CardItemCountAggregateOutputType | null
+    _avg: CardItemAvgAggregateOutputType | null
+    _sum: CardItemSumAggregateOutputType | null
     _min: CardItemMinAggregateOutputType | null
     _max: CardItemMaxAggregateOutputType | null
   }
@@ -11005,6 +11060,9 @@ export namespace Prisma {
     skuId?: boolean
     batchName?: boolean
     secret?: boolean
+    deliveryFileKey?: boolean
+    deliveryFileName?: boolean
+    deliveryFileSize?: boolean
     status?: boolean
     orderId?: boolean
     reservedAt?: boolean
@@ -11024,6 +11082,9 @@ export namespace Prisma {
     skuId?: boolean
     batchName?: boolean
     secret?: boolean
+    deliveryFileKey?: boolean
+    deliveryFileName?: boolean
+    deliveryFileSize?: boolean
     status?: boolean
     orderId?: boolean
     reservedAt?: boolean
@@ -11032,7 +11093,7 @@ export namespace Prisma {
     updatedAt?: boolean
   }
 
-  export type CardItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "skuId" | "batchName" | "secret" | "status" | "orderId" | "reservedAt" | "soldAt" | "createdAt" | "updatedAt", ExtArgs["result"]["cardItem"]>
+  export type CardItemOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "productId" | "skuId" | "batchName" | "secret" | "deliveryFileKey" | "deliveryFileName" | "deliveryFileSize" | "status" | "orderId" | "reservedAt" | "soldAt" | "createdAt" | "updatedAt", ExtArgs["result"]["cardItem"]>
   export type CardItemInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     product?: boolean | ProductDefaultArgs<ExtArgs>
     sku?: boolean | ProductSkuDefaultArgs<ExtArgs>
@@ -11052,6 +11113,9 @@ export namespace Prisma {
       skuId: string
       batchName: string | null
       secret: string
+      deliveryFileKey: string | null
+      deliveryFileName: string | null
+      deliveryFileSize: number | null
       status: $Enums.CardItemStatus
       orderId: string | null
       reservedAt: Date | null
@@ -11435,6 +11499,9 @@ export namespace Prisma {
     readonly skuId: FieldRef<"CardItem", 'String'>
     readonly batchName: FieldRef<"CardItem", 'String'>
     readonly secret: FieldRef<"CardItem", 'String'>
+    readonly deliveryFileKey: FieldRef<"CardItem", 'String'>
+    readonly deliveryFileName: FieldRef<"CardItem", 'String'>
+    readonly deliveryFileSize: FieldRef<"CardItem", 'Int'>
     readonly status: FieldRef<"CardItem", 'CardItemStatus'>
     readonly orderId: FieldRef<"CardItem", 'String'>
     readonly reservedAt: FieldRef<"CardItem", 'DateTime'>
@@ -16503,6 +16570,9 @@ export namespace Prisma {
     skuId: 'skuId',
     batchName: 'batchName',
     secret: 'secret',
+    deliveryFileKey: 'deliveryFileKey',
+    deliveryFileName: 'deliveryFileName',
+    deliveryFileSize: 'deliveryFileSize',
     status: 'status',
     orderId: 'orderId',
     reservedAt: 'reservedAt',
@@ -16749,6 +16819,8 @@ export namespace Prisma {
     skuId: 'skuId',
     batchName: 'batchName',
     secret: 'secret',
+    deliveryFileKey: 'deliveryFileKey',
+    deliveryFileName: 'deliveryFileName',
     orderId: 'orderId'
   };
 
@@ -17706,6 +17778,9 @@ export namespace Prisma {
     skuId?: StringFilter<"CardItem"> | string
     batchName?: StringNullableFilter<"CardItem"> | string | null
     secret?: StringFilter<"CardItem"> | string
+    deliveryFileKey?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileName?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileSize?: IntNullableFilter<"CardItem"> | number | null
     status?: EnumCardItemStatusFilter<"CardItem"> | $Enums.CardItemStatus
     orderId?: StringNullableFilter<"CardItem"> | string | null
     reservedAt?: DateTimeNullableFilter<"CardItem"> | Date | string | null
@@ -17723,6 +17798,9 @@ export namespace Prisma {
     skuId?: SortOrder
     batchName?: SortOrderInput | SortOrder
     secret?: SortOrder
+    deliveryFileKey?: SortOrderInput | SortOrder
+    deliveryFileName?: SortOrderInput | SortOrder
+    deliveryFileSize?: SortOrderInput | SortOrder
     status?: SortOrder
     orderId?: SortOrderInput | SortOrder
     reservedAt?: SortOrderInput | SortOrder
@@ -17744,6 +17822,9 @@ export namespace Prisma {
     skuId?: StringFilter<"CardItem"> | string
     batchName?: StringNullableFilter<"CardItem"> | string | null
     secret?: StringFilter<"CardItem"> | string
+    deliveryFileKey?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileName?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileSize?: IntNullableFilter<"CardItem"> | number | null
     status?: EnumCardItemStatusFilter<"CardItem"> | $Enums.CardItemStatus
     orderId?: StringNullableFilter<"CardItem"> | string | null
     reservedAt?: DateTimeNullableFilter<"CardItem"> | Date | string | null
@@ -17761,6 +17842,9 @@ export namespace Prisma {
     skuId?: SortOrder
     batchName?: SortOrderInput | SortOrder
     secret?: SortOrder
+    deliveryFileKey?: SortOrderInput | SortOrder
+    deliveryFileName?: SortOrderInput | SortOrder
+    deliveryFileSize?: SortOrderInput | SortOrder
     status?: SortOrder
     orderId?: SortOrderInput | SortOrder
     reservedAt?: SortOrderInput | SortOrder
@@ -17768,8 +17852,10 @@ export namespace Prisma {
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: CardItemCountOrderByAggregateInput
+    _avg?: CardItemAvgOrderByAggregateInput
     _max?: CardItemMaxOrderByAggregateInput
     _min?: CardItemMinOrderByAggregateInput
+    _sum?: CardItemSumOrderByAggregateInput
   }
 
   export type CardItemScalarWhereWithAggregatesInput = {
@@ -17781,6 +17867,9 @@ export namespace Prisma {
     skuId?: StringWithAggregatesFilter<"CardItem"> | string
     batchName?: StringNullableWithAggregatesFilter<"CardItem"> | string | null
     secret?: StringWithAggregatesFilter<"CardItem"> | string
+    deliveryFileKey?: StringNullableWithAggregatesFilter<"CardItem"> | string | null
+    deliveryFileName?: StringNullableWithAggregatesFilter<"CardItem"> | string | null
+    deliveryFileSize?: IntNullableWithAggregatesFilter<"CardItem"> | number | null
     status?: EnumCardItemStatusWithAggregatesFilter<"CardItem"> | $Enums.CardItemStatus
     orderId?: StringNullableWithAggregatesFilter<"CardItem"> | string | null
     reservedAt?: DateTimeNullableWithAggregatesFilter<"CardItem"> | Date | string | null
@@ -19195,6 +19284,9 @@ export namespace Prisma {
     id?: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -19211,6 +19303,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -19223,6 +19318,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -19239,6 +19337,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -19253,6 +19354,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -19265,6 +19369,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -19278,6 +19385,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -20598,6 +20708,17 @@ export namespace Prisma {
     version?: SortOrder
   }
 
+  export type IntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type EnumCardItemStatusFilter<$PrismaModel = never> = {
     equals?: $Enums.CardItemStatus | EnumCardItemStatusFieldRefInput<$PrismaModel>
     in?: $Enums.CardItemStatus[]
@@ -20627,6 +20748,9 @@ export namespace Prisma {
     skuId?: SortOrder
     batchName?: SortOrder
     secret?: SortOrder
+    deliveryFileKey?: SortOrder
+    deliveryFileName?: SortOrder
+    deliveryFileSize?: SortOrder
     status?: SortOrder
     orderId?: SortOrder
     reservedAt?: SortOrder
@@ -20635,12 +20759,19 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
+  export type CardItemAvgOrderByAggregateInput = {
+    deliveryFileSize?: SortOrder
+  }
+
   export type CardItemMaxOrderByAggregateInput = {
     id?: SortOrder
     productId?: SortOrder
     skuId?: SortOrder
     batchName?: SortOrder
     secret?: SortOrder
+    deliveryFileKey?: SortOrder
+    deliveryFileName?: SortOrder
+    deliveryFileSize?: SortOrder
     status?: SortOrder
     orderId?: SortOrder
     reservedAt?: SortOrder
@@ -20655,12 +20786,35 @@ export namespace Prisma {
     skuId?: SortOrder
     batchName?: SortOrder
     secret?: SortOrder
+    deliveryFileKey?: SortOrder
+    deliveryFileName?: SortOrder
+    deliveryFileSize?: SortOrder
     status?: SortOrder
     orderId?: SortOrder
     reservedAt?: SortOrder
     soldAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type CardItemSumOrderByAggregateInput = {
+    deliveryFileSize?: SortOrder
+  }
+
+  export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
   }
 
   export type EnumCardItemStatusWithAggregatesFilter<$PrismaModel = never> = {
@@ -21647,6 +21801,14 @@ export namespace Prisma {
     connect?: ShopOrderWhereUniqueInput
   }
 
+  export type NullableIntFieldUpdateOperationsInput = {
+    set?: number | null
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
+  }
+
   export type EnumCardItemStatusFieldUpdateOperationsInput = {
     set?: $Enums.CardItemStatus
   }
@@ -22166,6 +22328,33 @@ export namespace Prisma {
     not?: NestedEnumCardItemStatusFilter<$PrismaModel> | $Enums.CardItemStatus
   }
 
+  export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableWithAggregatesFilter<$PrismaModel> | number | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedFloatNullableFilter<$PrismaModel>
+    _sum?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedIntNullableFilter<$PrismaModel>
+    _max?: NestedIntNullableFilter<$PrismaModel>
+  }
+
+  export type NestedFloatNullableFilter<$PrismaModel = never> = {
+    equals?: number | FloatFieldRefInput<$PrismaModel> | null
+    in?: number[] | null
+    notIn?: number[] | null
+    lt?: number | FloatFieldRefInput<$PrismaModel>
+    lte?: number | FloatFieldRefInput<$PrismaModel>
+    gt?: number | FloatFieldRefInput<$PrismaModel>
+    gte?: number | FloatFieldRefInput<$PrismaModel>
+    not?: NestedFloatNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedEnumCardItemStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.CardItemStatus | EnumCardItemStatusFieldRefInput<$PrismaModel>
     in?: $Enums.CardItemStatus[]
@@ -22477,6 +22666,9 @@ export namespace Prisma {
     id?: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -22491,6 +22683,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -22710,6 +22905,9 @@ export namespace Prisma {
     skuId?: StringFilter<"CardItem"> | string
     batchName?: StringNullableFilter<"CardItem"> | string | null
     secret?: StringFilter<"CardItem"> | string
+    deliveryFileKey?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileName?: StringNullableFilter<"CardItem"> | string | null
+    deliveryFileSize?: IntNullableFilter<"CardItem"> | number | null
     status?: EnumCardItemStatusFilter<"CardItem"> | $Enums.CardItemStatus
     orderId?: StringNullableFilter<"CardItem"> | string | null
     reservedAt?: DateTimeNullableFilter<"CardItem"> | Date | string | null
@@ -22988,6 +23186,9 @@ export namespace Prisma {
     id?: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -23002,6 +23203,9 @@ export namespace Prisma {
     productId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -23989,6 +24193,9 @@ export namespace Prisma {
     id?: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -24004,6 +24211,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -24814,6 +25024,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -24892,6 +25105,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -24906,6 +25122,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -24919,6 +25138,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25090,6 +25312,9 @@ export namespace Prisma {
     productId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     orderId?: string | null
     reservedAt?: Date | string | null
@@ -25128,6 +25353,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25142,6 +25370,9 @@ export namespace Prisma {
     productId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25155,6 +25386,9 @@ export namespace Prisma {
     productId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     orderId?: NullableStringFieldUpdateOperationsInput | string | null
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25489,6 +25723,9 @@ export namespace Prisma {
     skuId: string
     batchName?: string | null
     secret: string
+    deliveryFileKey?: string | null
+    deliveryFileName?: string | null
+    deliveryFileSize?: number | null
     status?: $Enums.CardItemStatus
     reservedAt?: Date | string | null
     soldAt?: Date | string | null
@@ -25535,6 +25772,9 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25550,6 +25790,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -25563,6 +25806,9 @@ export namespace Prisma {
     skuId?: StringFieldUpdateOperationsInput | string
     batchName?: NullableStringFieldUpdateOperationsInput | string | null
     secret?: StringFieldUpdateOperationsInput | string
+    deliveryFileKey?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileName?: NullableStringFieldUpdateOperationsInput | string | null
+    deliveryFileSize?: NullableIntFieldUpdateOperationsInput | number | null
     status?: EnumCardItemStatusFieldUpdateOperationsInput | $Enums.CardItemStatus
     reservedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     soldAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null

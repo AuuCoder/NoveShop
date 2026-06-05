@@ -32,7 +32,12 @@ import {
   slugify,
 } from "@/lib/utils";
 import { generateOrderNo, generateToken } from "@/lib/server-utils";
-import { normalizeStoredImagePath, serializeImageList } from "@/lib/uploads";
+import {
+  isDeliveryStorageKey,
+  normalizeStoredImagePath,
+  resolveDeliveryFilePath,
+  serializeImageList,
+} from "@/lib/uploads";
 import { resolveOwnedCategoryId, listCategoriesByOwner, type CategorySnapshot } from "@/lib/category";
 import { serializeContentBlocks } from "@/lib/content-blocks";
 import { getEnv } from "@/lib/env";
@@ -119,6 +124,9 @@ const inventoryCardItemSelect = {
   id: true,
   batchName: true,
   secret: true,
+  deliveryFileKey: true,
+  deliveryFileName: true,
+  deliveryFileSize: true,
   status: true,
   createdAt: true,
   updatedAt: true,
@@ -3030,6 +3038,52 @@ export async function getOrderByPublicToken(publicToken: string) {
   return order ? hydrateOrderWithCardSecrets(order) : null;
 }
 
+/**
+ * 受保护的发货文件下载校验：仅当卡片确实属于该 publicToken 对应的订单、
+ * 且订单已履约、且卡片状态为 SOLD 时，返回文件磁盘路径与展示文件名。否则返回 null。
+ */
+export async function getDeliveryFileForDownload(publicToken: string, cardId: string) {
+  const token = publicToken.trim();
+  const id = cardId.trim();
+
+  if (!token || !id) {
+    return null;
+  }
+
+  const card = await prisma.cardItem.findFirst({
+    where: {
+      id,
+      deliveryFileKey: { not: null },
+      status: CardItemStatus.SOLD,
+      order: {
+        is: {
+          publicToken: token,
+          status: ShopOrderStatus.FULFILLED,
+        },
+      },
+    },
+    select: {
+      deliveryFileKey: true,
+      deliveryFileName: true,
+    },
+  });
+
+  if (!card?.deliveryFileKey) {
+    return null;
+  }
+
+  const filePath = resolveDeliveryFilePath(card.deliveryFileKey);
+
+  if (!filePath) {
+    return null;
+  }
+
+  return {
+    filePath,
+    fileName: card.deliveryFileName || "delivery-file",
+  };
+}
+
 export async function lookupOrder(orderNo: string, customerEmail: string) {
   const order = await prisma.shopOrder.findUnique({
     where: {
@@ -4479,12 +4533,60 @@ export async function deleteProductSku(input: {
   });
 }
 
-export async function importCards(input: {
+type DeliveryFileInput = {
+  storageKey: string;
+  fileName: string;
+  size: number;
+};
+
+function buildCardImportData(input: {
+  productId: string;
   skuId: string;
   batchName?: string;
-  rawCards: string;
+  mode: "lines" | "single" | "file";
+  rawCards?: string;
+  files?: DeliveryFileInput[];
 }) {
-  const lines = input.rawCards
+  const batchName = input.batchName?.trim() || null;
+
+  if (input.mode === "file") {
+    const files = (input.files ?? []).filter((file) => isDeliveryStorageKey(file.storageKey));
+
+    if (files.length === 0) {
+      throw new Error("请至少上传一个发货文件。");
+    }
+
+    return files.map((file) => ({
+      productId: input.productId,
+      skuId: input.skuId,
+      batchName,
+      secret: encryptText(file.fileName || "发货文件"),
+      deliveryFileKey: file.storageKey,
+      deliveryFileName: file.fileName.slice(0, 200) || file.storageKey,
+      deliveryFileSize: Number.isFinite(file.size) ? Math.max(0, Math.floor(file.size)) : null,
+    }));
+  }
+
+  const raw = input.rawCards ?? "";
+
+  if (input.mode === "single") {
+    // 整段文本作为一条卡密（适合超长 JSON / 多行文案）。
+    const secret = raw.trim();
+    if (!secret) {
+      throw new Error("请填写要发货的文本内容。");
+    }
+    return [
+      {
+        productId: input.productId,
+        skuId: input.skuId,
+        batchName,
+        secret: encryptText(secret),
+      },
+    ];
+  }
+
+  // 默认：一行一条卡密。
+  const lines = raw
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
@@ -4493,6 +4595,21 @@ export async function importCards(input: {
     throw new Error("请至少导入一条卡密。");
   }
 
+  return lines.map((secret) => ({
+    productId: input.productId,
+    skuId: input.skuId,
+    batchName,
+    secret: encryptText(secret),
+  }));
+}
+
+export async function importCards(input: {
+  skuId: string;
+  batchName?: string;
+  rawCards?: string;
+  importMode?: "lines" | "single" | "file";
+  files?: DeliveryFileInput[];
+}) {
   const sku = await prisma.productSku.findUnique({
     where: {
       id: input.skuId,
@@ -4503,31 +4620,28 @@ export async function importCards(input: {
     throw new Error("请选择有效的 SKU。");
   }
 
-  await prisma.cardItem.createMany({
-    data: lines.map((secret) => ({
-      productId: sku.productId,
-      skuId: sku.id,
-      batchName: input.batchName?.trim() || null,
-      secret: encryptText(secret),
-    })),
+  const data = buildCardImportData({
+    productId: sku.productId,
+    skuId: sku.id,
+    batchName: input.batchName,
+    mode: input.importMode ?? "lines",
+    rawCards: input.rawCards,
+    files: input.files,
   });
+
+  await prisma.cardItem.createMany({ data });
+
+  return { importedCount: data.length };
 }
 
 export async function importMerchantCards(input: {
   merchantAccountId: string;
   skuId: string;
   batchName?: string;
-  rawCards: string;
+  rawCards?: string;
+  importMode?: "lines" | "single" | "file";
+  files?: DeliveryFileInput[];
 }) {
-  const lines = input.rawCards
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length === 0) {
-    throw new Error("请至少导入一条卡密。");
-  }
-
   const sku = await prisma.productSku.findFirst({
     where: {
       id: input.skuId,
@@ -4554,18 +4668,20 @@ export async function importMerchantCards(input: {
     throw new Error("你只能给自己名下商品的 SKU 导入卡密。");
   }
 
-  await prisma.cardItem.createMany({
-    data: lines.map((secret) => ({
-      productId: sku.productId,
-      skuId: sku.id,
-      batchName: input.batchName?.trim() || null,
-      secret: encryptText(secret),
-    })),
+  const data = buildCardImportData({
+    productId: sku.productId,
+    skuId: sku.id,
+    batchName: input.batchName,
+    mode: input.importMode ?? "lines",
+    rawCards: input.rawCards,
+    files: input.files,
   });
+
+  await prisma.cardItem.createMany({ data });
 
   return {
     productSlug: sku.product.slug,
-    importedCount: lines.length,
+    importedCount: data.length,
   };
 }
 

@@ -251,6 +251,9 @@ exports.Prisma.CardItemScalarFieldEnum = {
   skuId: 'skuId',
   batchName: 'batchName',
   secret: 'secret',
+  deliveryFileKey: 'deliveryFileKey',
+  deliveryFileName: 'deliveryFileName',
+  deliveryFileSize: 'deliveryFileSize',
   status: 'status',
   orderId: 'orderId',
   reservedAt: 'reservedAt',
@@ -452,6 +455,8 @@ exports.Prisma.CardItemOrderByRelevanceFieldEnum = {
   skuId: 'skuId',
   batchName: 'batchName',
   secret: 'secret',
+  deliveryFileKey: 'deliveryFileKey',
+  deliveryFileName: 'deliveryFileName',
   orderId: 'orderId'
 };
 

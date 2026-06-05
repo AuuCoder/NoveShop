@@ -57,6 +57,7 @@ services:
       - "3001:3001"
     volumes:
       - noveshop-uploads:/app/uploads
+      - noveshop-delivery:/app/delivery-files
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,3 +75,4 @@ services:
 volumes:
   noveshop-postgres-data:
   noveshop-uploads:
+  noveshop-delivery:

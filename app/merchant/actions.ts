@@ -54,6 +54,10 @@ import {
   getStorefrontPathsForProduct,
 } from "@/lib/storefront";
 import {
+  parseCardImportMode,
+  parseDeliveryFilesField,
+} from "@/lib/uploads";
+import {
   createCategory,
   deleteCategory,
   renameCategory,
@@ -879,6 +883,8 @@ export async function importMerchantCardsAction(formData: FormData) {
       skuId: String(formData.get("skuId") ?? ""),
       batchName: String(formData.get("batchName") ?? ""),
       rawCards: String(formData.get("rawCards") ?? ""),
+      importMode: parseCardImportMode(formData.get("importMode")),
+      files: parseDeliveryFilesField(String(formData.get("deliveryFiles") ?? "")),
     });
 
     productSlug = result.productSlug;

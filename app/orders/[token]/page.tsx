@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
+  Download,
+  FileText,
   KeyRound,
   PackageSearch,
   RefreshCcw,
@@ -21,7 +23,7 @@ import {
   refreshOrderByPublicToken,
 } from "@/lib/shop";
 import { buildStorefrontPath } from "@/lib/storefront";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, formatFileSize } from "@/lib/utils";
 
 const toneToBadgeVariant: Record<
   ReturnType<typeof getOrderStatusTone>,
@@ -163,20 +165,56 @@ export default async function OrderDetailPage({
 
             {order.status === "FULFILLED" ? (
               <ul className="flex flex-col gap-3">
-                {order.cards.map((card) => (
-                  <li
-                    key={card.id}
-                    className="rounded-md border border-border/60 bg-muted/30 px-3 py-3"
-                  >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <KeyRound className="h-3.5 w-3.5" />
-                      卡密 {card.id.slice(-6)}
-                    </div>
-                    <code className="mt-2 block break-all rounded-sm bg-background px-2 py-1.5 font-mono text-sm">
-                      {card.secret}
-                    </code>
-                  </li>
-                ))}
+                {order.cards.map((card) => {
+                  const isFile = Boolean(card.deliveryFileKey);
+
+                  return (
+                    <li
+                      key={card.id}
+                      className="rounded-md border border-border/60 bg-muted/30 px-3 py-3"
+                    >
+                      {isFile ? (
+                        <>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <FileText className="h-3.5 w-3.5" />
+                            发货文件 {card.id.slice(-6)}
+                          </div>
+                          <div className="mt-2 flex flex-wrap items-center justify-between gap-3 rounded-sm bg-background px-3 py-2.5">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-foreground">
+                                {card.deliveryFileName || "发货文件"}
+                              </p>
+                              {formatFileSize(card.deliveryFileSize) ? (
+                                <p className="text-xs text-muted-foreground">
+                                  {formatFileSize(card.deliveryFileSize)}
+                                </p>
+                              ) : null}
+                            </div>
+                            <Button asChild size="sm">
+                              <a
+                                href={`/orders/${order.publicToken}/files/${card.id}`}
+                                download
+                              >
+                                <Download className="mr-1 h-4 w-4" />
+                                下载
+                              </a>
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <KeyRound className="h-3.5 w-3.5" />
+                            卡密 {card.id.slice(-6)}
+                          </div>
+                          <code className="mt-2 block whitespace-pre-wrap break-words rounded-sm bg-background px-2 py-1.5 font-mono text-sm">
+                            {card.secret}
+                          </code>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">

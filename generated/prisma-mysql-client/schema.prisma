@@ -216,20 +216,23 @@ model PaymentProfileRevision {
 }
 
 model CardItem {
-  id         String         @id @default(cuid())
-  productId  String
-  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  skuId      String
-  sku        ProductSku     @relation(fields: [skuId], references: [id], onDelete: Restrict)
-  batchName  String?
-  secret     String
-  status     CardItemStatus @default(AVAILABLE)
-  orderId    String?
-  order      ShopOrder?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  reservedAt DateTime?
-  soldAt     DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id               String         @id @default(cuid())
+  productId        String
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  skuId            String
+  sku              ProductSku     @relation(fields: [skuId], references: [id], onDelete: Restrict)
+  batchName        String?
+  secret           String
+  deliveryFileKey  String?
+  deliveryFileName String?
+  deliveryFileSize Int?
+  status           CardItemStatus @default(AVAILABLE)
+  orderId          String?
+  order            ShopOrder?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  reservedAt       DateTime?
+  soldAt           DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@index([productId, status, createdAt])
   @@index([skuId, status, createdAt])
