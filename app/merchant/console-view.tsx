@@ -64,7 +64,7 @@ import {
   buildMerchantStorefrontPath,
   buildMerchantStorefrontProductPath,
 } from "@/lib/storefront";
-import { formatDateTime, maskCardSecret } from "@/lib/utils";
+import { formatDateTime, formatFileSize, maskCardSecret } from "@/lib/utils";
 
 type MerchantDashboardData = Awaited<ReturnType<typeof getMerchantDashboardData>>;
 type MerchantProduct = MerchantDashboardData["products"][number];
@@ -2304,36 +2304,55 @@ function InventorySection({
                           </td>
                           <td>
                             {item.status === CardItemStatus.AVAILABLE ? (
-                              <form action={updateMerchantCardItemAction} className="admin-compact-form">
-                                <MerchantTabInput tab="inventory" returnTo={returnTo} />
-                                <input type="hidden" name="cardItemId" value={item.id} />
-                                <input type="hidden" name="productSlug" value={item.product.slug} />
-                                <input
-                                  name="batchName"
-                                  defaultValue={item.batchName ?? ""}
-                                  placeholder="批次名"
-                                  className="admin-compact-input"
-                                />
-                                <input
-                                  name="secret"
-                                  defaultValue={item.secret}
-                                  placeholder="卡密内容"
-                                  className="admin-compact-input admin-code-input"
-                                  required
-                                />
-                                <div className="admin-compact-actions">
-                                  <button type="submit" className="button-secondary">
-                                    更新
-                                  </button>
-                                  <button
-                                    formAction={deleteMerchantCardItemAction}
-                                    type="submit"
-                                    className="button-link"
-                                  >
-                                    删除
-                                  </button>
+                              item.deliveryFileKey ? (
+                                <div className="admin-compact-stack">
+                                  <strong>{item.deliveryFileName || "发货文件"}</strong>
+                                  {formatFileSize(item.deliveryFileSize) ? (
+                                    <p className="small-copy">{formatFileSize(item.deliveryFileSize)}</p>
+                                  ) : null}
+                                  <form action={deleteMerchantCardItemAction} className="admin-compact-form">
+                                    <MerchantTabInput tab="inventory" returnTo={returnTo} />
+                                    <input type="hidden" name="cardItemId" value={item.id} />
+                                    <input type="hidden" name="productSlug" value={item.product.slug} />
+                                    <div className="admin-compact-actions">
+                                      <button type="submit" className="button-link">
+                                        删除
+                                      </button>
+                                    </div>
+                                  </form>
                                 </div>
-                              </form>
+                              ) : (
+                                <form action={updateMerchantCardItemAction} className="admin-compact-form">
+                                  <MerchantTabInput tab="inventory" returnTo={returnTo} />
+                                  <input type="hidden" name="cardItemId" value={item.id} />
+                                  <input type="hidden" name="productSlug" value={item.product.slug} />
+                                  <input
+                                    name="batchName"
+                                    defaultValue={item.batchName ?? ""}
+                                    placeholder="批次名"
+                                    className="admin-compact-input"
+                                  />
+                                  <input
+                                    name="secret"
+                                    defaultValue={item.secret}
+                                    placeholder="卡密内容"
+                                    className="admin-compact-input admin-code-input"
+                                    required
+                                  />
+                                  <div className="admin-compact-actions">
+                                    <button type="submit" className="button-secondary">
+                                      更新
+                                    </button>
+                                    <button
+                                      formAction={deleteMerchantCardItemAction}
+                                      type="submit"
+                                      className="button-link"
+                                    >
+                                      删除
+                                    </button>
+                                  </div>
+                                </form>
+                              )
                             ) : (
                               <div className="admin-compact-stack">
                                 <strong>{maskCardSecret(item.secret)}</strong>

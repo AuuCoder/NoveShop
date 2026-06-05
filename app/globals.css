@@ -7286,44 +7286,77 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
 }
 
 .admin-route .admin-segmented {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-muted, rgba(0, 0, 0, 0.02));
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
 .admin-route .admin-segmented-item {
   appearance: none;
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--panel);
   color: var(--muted);
   font-size: 0.85rem;
   font-weight: 500;
-  padding: 6px 14px;
-  border-radius: 6px;
+  padding: 7px 18px;
+  border-radius: 999px;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .admin-route .admin-segmented-item:hover {
-  color: var(--foreground, #111);
+  color: var(--ink);
+  border-color: var(--accent);
 }
 
 .admin-route .admin-segmented-item.is-active {
-  background: var(--surface, #fff);
-  color: var(--foreground, #111);
-  border-color: var(--border);
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  background: var(--accent-soft);
+  color: var(--ink);
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
 }
 
-.admin-route .admin-import-upload-trigger {
-  display: inline-flex;
+.admin-route .admin-import-dropzone {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: fit-content;
+  justify-content: center;
+  gap: 6px;
+  padding: 26px 18px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--muted);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.admin-route .admin-import-dropzone:hover,
+.admin-route .admin-import-dropzone:focus-visible {
+  border-color: var(--accent);
+  color: var(--ink);
+  outline: none;
+}
+
+.admin-route .admin-import-dropzone.is-dragging {
+  border-color: var(--accent);
+  background: var(--premium-accent-soft);
+  color: var(--ink);
+}
+
+.admin-route .admin-import-dropzone-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.admin-route .admin-import-dropzone-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 .admin-route .admin-import-file-list {
@@ -7341,9 +7374,9 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface, #fff);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
 }
 
 .admin-route .admin-import-file-meta {
@@ -7356,7 +7389,7 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
 .admin-route .admin-import-file-name {
   font-size: 0.88rem;
   font-weight: 500;
-  color: var(--foreground, #111);
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7370,7 +7403,7 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
 
 .admin-route .admin-import-file-remove {
   appearance: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
   display: inline-flex;
@@ -7378,7 +7411,7 @@ html[data-theme="dark"] .admin-route .admin-menu-item.active .admin-menu-icon {
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.15s ease, border-color 0.15s ease;

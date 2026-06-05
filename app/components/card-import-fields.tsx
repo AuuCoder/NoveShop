@@ -14,8 +14,8 @@ type UploadedDeliveryFile = {
 };
 
 const MODE_OPTIONS: Array<{ value: ImportMode; label: string; hint: string }> = [
-  { value: "lines", label: "一行一条", hint: "每行一条卡密，适合批量卡密。" },
-  { value: "single", label: "整段文本", hint: "整段内容作为一条发货，适合超长 JSON / 多行文案。" },
+  { value: "lines", label: "一行一条", hint: "每行视为一条卡密，空行自动忽略，适合批量卡号 / 兑换码。" },
+  { value: "single", label: "整段文本", hint: "整段内容作为一条发货，适合超长 JSON、账号密码或多行文案。" },
   { value: "file", label: "上传文件", hint: "每个文件作为一条独立发货，单文件最大 50MB。" },
 ];
 
@@ -25,8 +25,10 @@ const MODE_OPTIONS: Array<{ value: ImportMode; label: string; hint: string }> = 
  */
 export function CardImportFields({ idPrefix }: { idPrefix: string }) {
   const [mode, setMode] = useState<ImportMode>("lines");
+  const [rawCards, setRawCards] = useState("");
   const [files, setFiles] = useState<UploadedDeliveryFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -52,7 +54,7 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
           | null;
 
         if (!response.ok || !payload?.storageKey) {
-          throw new Error(payload?.error ?? "上传失败，请稍后再试。");
+          throw new Error(payload?.error ?? `「${file.name}」上传失败，请稍后再试。`);
         }
 
         uploaded.push({
@@ -73,9 +75,56 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
     }
   }, []);
 
-  function handleRemove(index: number) {
-    setFiles((previous) => previous.filter((_, position) => position !== index));
-  }
+  const discardUploadedFile = useCallback((storageKey: string) => {
+    void fetch("/api/upload", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storageKey }),
+    }).catch(() => {
+      // 清理失败不阻塞用户操作；服务端删卡链路仍会兜底回收。
+    });
+  }, []);
+
+  const handleRemove = useCallback(
+    (index: number) => {
+      setFiles((previous) => {
+        const target = previous[index];
+        if (target) {
+          discardUploadedFile(target.storageKey);
+        }
+        return previous.filter((_, position) => position !== index);
+      });
+    },
+    [discardUploadedFile],
+  );
+
+  const handleModeChange = useCallback(
+    (next: ImportMode) => {
+      setError(null);
+      setMode((current) => {
+        // 离开「上传文件」时，回收已上传但不会入库的孤儿文件。
+        if (current === "file" && next !== "file") {
+          setFiles((previous) => {
+            previous.forEach((file) => discardUploadedFile(file.storageKey));
+            return [];
+          });
+        }
+        return next;
+      });
+    },
+    [discardUploadedFile],
+  );
+
+  const handleDrop = useCallback(
+    (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setDragging(false);
+      if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+        void uploadFiles(event.dataTransfer.files);
+      }
+    },
+    [uploadFiles],
+  );
 
   const textRequired = mode !== "file";
 
@@ -86,13 +135,15 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
 
       <div className="field">
         <label>发货方式</label>
-        <div className="admin-segmented">
+        <div className="admin-segmented" role="tablist">
           {MODE_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
+              role="tab"
+              aria-selected={mode === option.value}
               className={mode === option.value ? "admin-segmented-item is-active" : "admin-segmented-item"}
-              onClick={() => setMode(option.value)}
+              onClick={() => handleModeChange(option.value)}
             >
               {option.label}
             </button>
@@ -116,15 +167,31 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
               }
             }}
           />
-          <button
-            type="button"
-            className="button button-secondary admin-import-upload-trigger"
-            disabled={uploading}
+
+          <div
+            className={dragging ? "admin-import-dropzone is-dragging" : "admin-import-dropzone"}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
           >
-            {uploading ? <Loader2 className="admin-spin" size={15} /> : <FileUp size={15} />}
-            {uploading ? "上传中…" : "选择文件上传"}
-          </button>
+            {uploading ? <Loader2 className="admin-spin" size={20} /> : <FileUp size={20} />}
+            <span className="admin-import-dropzone-title">
+              {uploading ? "上传中…" : "点击选择，或拖拽文件到此处"}
+            </span>
+            <span className="admin-import-dropzone-hint">每个文件作为一条独立发货，单文件最大 50MB</span>
+          </div>
 
           {files.length > 0 ? (
             <ul className="admin-import-file-list">
@@ -140,16 +207,14 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
                     type="button"
                     className="admin-import-file-remove"
                     onClick={() => handleRemove(index)}
-                    aria-label="移除"
+                    aria-label={`移除 ${file.fileName}`}
                   >
                     <X size={14} />
                   </button>
                 </li>
               ))}
             </ul>
-          ) : (
-            <p className="small-copy">每个文件会作为一条独立发货入库，单文件最大 50MB。</p>
-          )}
+          ) : null}
 
           {error ? <p className="admin-import-error">{error}</p> : null}
         </div>
@@ -161,10 +226,12 @@ export function CardImportFields({ idPrefix }: { idPrefix: string }) {
           <textarea
             id={`${idPrefix}-raw-cards`}
             name="rawCards"
+            value={rawCards}
+            onChange={(event) => setRawCards(event.target.value)}
             placeholder={
               mode === "single"
-                ? "粘贴整段文本（支持超长 JSON / 多行文案），作为一条发货。"
-                : "一行一条卡密\nCARD-001\nCARD-002"
+                ? "粘贴整段文本（支持超长 JSON / 多行文案），整体作为一条发货。"
+                : "一行一条卡密，例如：\nCARD-0001\nCARD-0002\nCARD-0003"
             }
             required={textRequired}
           />

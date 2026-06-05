@@ -33,6 +33,8 @@ import {
 } from "@/lib/utils";
 import { generateOrderNo, generateToken } from "@/lib/server-utils";
 import {
+  deleteDeliveryFile,
+  deleteDeliveryFiles,
   isDeliveryStorageKey,
   normalizeStoredImagePath,
   resolveDeliveryFilePath,
@@ -4059,7 +4061,7 @@ export async function deleteMerchantProduct(input: {
   merchantAccountId: string;
   productId: string;
 }) {
-  return prisma.$transaction(async (tx) => {
+  const { product, fileKeys } = await prisma.$transaction(async (tx) => {
     const product = await tx.product.findFirst({
       where: {
         id: input.productId,
@@ -4081,6 +4083,11 @@ export async function deleteMerchantProduct(input: {
 
     await assertProductDeletionAllowed(tx, product.id);
 
+    const doomed = await tx.cardItem.findMany({
+      where: { productId: product.id },
+      select: { deliveryFileKey: true },
+    });
+
     await tx.cardItem.deleteMany({
       where: {
         productId: product.id,
@@ -4097,15 +4104,19 @@ export async function deleteMerchantProduct(input: {
       },
     });
 
-    return product;
+    return { product, fileKeys: doomed.map((card) => card.deliveryFileKey) };
   });
+
+  await deleteDeliveryFiles(fileKeys);
+
+  return product;
 }
 
 export async function deleteMerchantProductSku(input: {
   merchantAccountId: string;
   skuId: string;
 }) {
-  return prisma.$transaction(async (tx) => {
+  const { result, fileKeys } = await prisma.$transaction(async (tx) => {
     const sku = await tx.productSku.findFirst({
       where: {
         id: input.skuId,
@@ -4134,6 +4145,11 @@ export async function deleteMerchantProductSku(input: {
 
     await assertSkuDeletionAllowed(tx, sku.id);
 
+    const doomed = await tx.cardItem.findMany({
+      where: { skuId: sku.id },
+      select: { deliveryFileKey: true },
+    });
+
     await tx.cardItem.deleteMany({
       where: {
         skuId: sku.id,
@@ -4148,9 +4164,16 @@ export async function deleteMerchantProductSku(input: {
     await syncProductPriceCache(tx, sku.productId);
 
     return {
-      productSlug: sku.product.slug,
+      result: {
+        productSlug: sku.product.slug,
+      },
+      fileKeys: doomed.map((card) => card.deliveryFileKey),
     };
   });
+
+  await deleteDeliveryFiles(fileKeys);
+
+  return result;
 }
 
 export async function createProduct(input: {
@@ -4462,7 +4485,7 @@ export async function toggleProductSkuEnabled(input: {
 export async function deleteProduct(input: {
   productId: string;
 }) {
-  return prisma.$transaction(async (tx) => {
+  const { product, fileKeys } = await prisma.$transaction(async (tx) => {
     const product = await tx.product.findUnique({
       where: {
         id: input.productId,
@@ -4478,6 +4501,11 @@ export async function deleteProduct(input: {
     }
 
     await assertProductDeletionAllowed(tx, product.id);
+
+    const doomed = await tx.cardItem.findMany({
+      where: { productId: product.id },
+      select: { deliveryFileKey: true },
+    });
 
     await tx.cardItem.deleteMany({
       where: {
@@ -4495,14 +4523,18 @@ export async function deleteProduct(input: {
       },
     });
 
-    return product;
+    return { product, fileKeys: doomed.map((card) => card.deliveryFileKey) };
   });
+
+  await deleteDeliveryFiles(fileKeys);
+
+  return product;
 }
 
 export async function deleteProductSku(input: {
   skuId: string;
 }) {
-  return prisma.$transaction(async (tx) => {
+  const { result, fileKeys } = await prisma.$transaction(async (tx) => {
     const sku = await assertSkuDeletionAllowed(tx, input.skuId);
 
     const product = await tx.product.findUniqueOrThrow({
@@ -4512,6 +4544,11 @@ export async function deleteProductSku(input: {
       select: {
         slug: true,
       },
+    });
+
+    const doomed = await tx.cardItem.findMany({
+      where: { skuId: sku.id },
+      select: { deliveryFileKey: true },
     });
 
     await tx.cardItem.deleteMany({
@@ -4528,9 +4565,16 @@ export async function deleteProductSku(input: {
     await syncProductPriceCache(tx, sku.productId);
 
     return {
-      productSlug: product.slug,
+      result: {
+        productSlug: product.slug,
+      },
+      fileKeys: doomed.map((card) => card.deliveryFileKey),
     };
   });
+
+  await deleteDeliveryFiles(fileKeys);
+
+  return result;
 }
 
 type DeliveryFileInput = {
@@ -4783,6 +4827,7 @@ export async function deleteCardItem(input: {
     select: {
       id: true,
       status: true,
+      deliveryFileKey: true,
     },
   });
 
@@ -4799,6 +4844,8 @@ export async function deleteCardItem(input: {
       id: card.id,
     },
   });
+
+  await deleteDeliveryFile(card.deliveryFileKey);
 }
 
 export async function deleteMerchantCardItem(input: {
@@ -4819,6 +4866,7 @@ export async function deleteMerchantCardItem(input: {
     select: {
       id: true,
       status: true,
+      deliveryFileKey: true,
     },
   });
 
@@ -4835,6 +4883,8 @@ export async function deleteMerchantCardItem(input: {
       id: card.id,
     },
   });
+
+  await deleteDeliveryFile(card.deliveryFileKey);
 }
 
 export async function clearAvailableCardsForSku(input: {
@@ -4853,12 +4903,19 @@ export async function clearAvailableCardsForSku(input: {
     throw new Error("SKU 不存在。");
   }
 
-  const result = await prisma.cardItem.deleteMany({
-    where: {
-      skuId: sku.id,
-      status: CardItemStatus.AVAILABLE,
-    },
+  const where = {
+    skuId: sku.id,
+    status: CardItemStatus.AVAILABLE,
+  };
+
+  const doomed = await prisma.cardItem.findMany({
+    where,
+    select: { deliveryFileKey: true },
   });
+
+  const result = await prisma.cardItem.deleteMany({ where });
+
+  await deleteDeliveryFiles(doomed.map((card) => card.deliveryFileKey));
 
   return {
     clearedCount: result.count,
@@ -4889,12 +4946,19 @@ export async function clearAvailableMerchantCardsForSku(input: {
     throw new Error("你只能清理自己名下 SKU 的库存。");
   }
 
-  const result = await prisma.cardItem.deleteMany({
-    where: {
-      skuId: sku.id,
-      status: CardItemStatus.AVAILABLE,
-    },
+  const where = {
+    skuId: sku.id,
+    status: CardItemStatus.AVAILABLE,
+  };
+
+  const doomed = await prisma.cardItem.findMany({
+    where,
+    select: { deliveryFileKey: true },
   });
+
+  const result = await prisma.cardItem.deleteMany({ where });
+
+  await deleteDeliveryFiles(doomed.map((card) => card.deliveryFileKey));
 
   return {
     clearedCount: result.count,

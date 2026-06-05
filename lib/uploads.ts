@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { getEnv } from "@/lib/env";
@@ -212,6 +212,34 @@ export function resolveDeliveryFilePath(storageKey: string) {
   }
 
   return resolved;
+}
+
+/**
+ * 删除一个发货文件。非法存储键直接跳过；文件已不存在(ENOENT)视为成功。
+ * 其他错误只记录日志、不抛出——删除库存记录不应因删盘失败而回滚。
+ */
+export async function deleteDeliveryFile(storageKey: string | null | undefined): Promise<void> {
+  const filePath = resolveDeliveryFilePath(storageKey ?? "");
+
+  if (!filePath) {
+    return;
+  }
+
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException)?.code === "ENOENT") {
+      return;
+    }
+
+    console.error("Failed to delete delivery file", error);
+  }
+}
+
+export async function deleteDeliveryFiles(
+  storageKeys: Array<string | null | undefined>,
+): Promise<void> {
+  await Promise.allSettled(storageKeys.map((key) => deleteDeliveryFile(key)));
 }
 
 export function isStoredUploadPath(value: string) {

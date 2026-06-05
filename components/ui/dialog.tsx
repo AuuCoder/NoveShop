@@ -33,7 +33,7 @@ function DialogContent({
       <DialogPrimitive.Overlay data-slot="dialog-overlay" className="admin-dialog-overlay" />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        className={cn("admin-dialog-content", className)}
+        className={cn("admin-route admin-dialog-content", className)}
         {...props}
       >
         {title ? (
