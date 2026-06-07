@@ -646,6 +646,16 @@ html[data-theme="dark"] .preference-button.active .preference-icon {
   margin-top: 0;
 }
 
+/* 兜底:相邻按钮即使父容器未设 gap 也保持间距 */
+.button + .button,
+.button + .button-secondary,
+.button-secondary + .button,
+.button-secondary + .button-secondary,
+.button + .button-link,
+.button-secondary + .button-link {
+  margin-left: 10px;
+}
+
 .button,
 .button-secondary,
 .button-link {
@@ -660,7 +670,9 @@ html[data-theme="dark"] .preference-button.active .preference-icon {
   font-weight: 600;
   transition:
     transform 180ms ease,
+    box-shadow 180ms ease,
     opacity 180ms ease,
+    background 180ms ease,
     border-color 180ms ease;
 }
 
@@ -670,16 +682,48 @@ html[data-theme="dark"] .preference-button.active .preference-icon {
   transform: translateY(-1px);
 }
 
+.button:active,
+.button-secondary:active {
+  transform: translateY(0);
+}
+
+.button:focus-visible,
+.button-secondary:focus-visible,
+.button-link:focus-visible {
+  outline: 2px solid rgba(122, 168, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.button:disabled,
+.button-secondary:disabled,
+.button-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+  box-shadow: none;
+}
+
 .button {
   background: linear-gradient(135deg, #ff7dc6 0%, #7aa8ff 100%);
   color: white;
   box-shadow: 0 16px 28px rgba(122, 168, 255, 0.2);
 }
 
+.button:hover {
+  box-shadow: 0 20px 34px rgba(122, 168, 255, 0.3);
+}
+
 .button-secondary {
   border-color: rgba(130, 146, 196, 0.16);
   background: rgba(255, 255, 255, 0.72);
   color: #535b72;
+  box-shadow: 0 8px 18px rgba(122, 168, 255, 0.08);
+}
+
+.button-secondary:hover {
+  border-color: rgba(130, 146, 196, 0.28);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 12px 24px rgba(122, 168, 255, 0.14);
 }
 
 .button-link {
@@ -1175,6 +1219,9 @@ html[data-theme="dark"] body:has(.storefront-shell) .sku-option input:checked + 
 }
 
 .storefront-product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 14px;
 }
 
@@ -1389,6 +1436,9 @@ html[data-theme="dark"] body:has(.storefront-shell) .sku-option input:checked + 
 }
 
 .product-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 0;
 }
 
@@ -4089,6 +4139,14 @@ body:has(.admin-route) .field select {
 .admin-quick-toggle-form .button-secondary,
 .admin-sku-summary-action .button-link {
   width: fit-content;
+}
+
+.admin-table-danger-action {
+  color: #c0392b;
+}
+
+.admin-table-danger-action:hover {
+  color: #a52f22;
 }
 
 .admin-compact-form,

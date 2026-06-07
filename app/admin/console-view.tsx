@@ -5,6 +5,7 @@ import { PaymentOperationsView } from "@/app/payment-operations-view";
 import { ImageUploadField } from "@/app/image-upload-field";
 import { CoverImageField } from "@/app/cover-image-field";
 import { ContentBlocksField } from "@/app/content-blocks-field";
+import { ConfirmSubmitButton } from "@/app/components/confirm-submit-button";
 import { FormDialog } from "@/app/components/form-dialog";
 import { AutoSubmitSelect } from "@/app/components/auto-submit-select";
 import { CardImportFields } from "@/app/components/card-import-fields";
@@ -1558,6 +1559,18 @@ function ProductsSection({
                           <Link href={getAdminProductStorefrontPath(product)} className="button-link">
                             打开前台页
                           </Link>
+                          <form action={deleteProductAction} className="admin-quick-toggle-form">
+                            <AdminTabInput tab="products" returnTo={returnTo} />
+                            <input type="hidden" name="productId" value={product.id} />
+                            <input type="hidden" name="productSlug" value={product.slug} />
+                            <ConfirmSubmitButton
+                              confirmMessage={`确定删除商品「${product.name}」吗？该操作会一并删除它的 SKU 和卡密，且不可恢复。`}
+                              formNoValidate
+                              className="button-link admin-table-danger-action"
+                            >
+                              删除商品
+                            </ConfirmSubmitButton>
+                          </form>
                         </td>
                       </tr>
                     ))}
