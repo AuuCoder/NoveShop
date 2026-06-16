@@ -20,8 +20,8 @@ const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
     description: "适合网页内直接拉起支付宝收银台。",
   },
   "usdt.base": {
-    label: "USDT · Base",
-    description: "通过 Base 链完成 USDT 转账支付。",
+    label: "USDT · Polygon",
+    description: "通过 Polygon 链完成 USDT 转账支付。",
   },
   "usdt.bsc": {
     label: "USDT · BSC",

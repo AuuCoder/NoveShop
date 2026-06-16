@@ -132,8 +132,8 @@ function getPaymentChannelDictionary(language: SiteLanguage) {
         label: "Alipay Page",
       },
       "usdt.base": {
-        description: "Pay with USDT on the Base network.",
-        label: "USDT · Base",
+        description: "Pay with USDT on the Polygon network.",
+        label: "USDT · Polygon",
       },
       "usdt.bsc": {
         description: "Pay with USDT on the BSC network.",
@@ -164,8 +164,8 @@ function getPaymentChannelDictionary(language: SiteLanguage) {
       label: "支付宝",
     },
     "usdt.base": {
-      description: "通过 Base 链完成 USDT 转账支付。",
-      label: "USDT · Base",
+      description: "通过 Polygon 链完成 USDT 转账支付。",
+      label: "USDT · Polygon",
     },
     "usdt.bsc": {
       description: "通过 BSC 链完成 USDT 转账支付。",
