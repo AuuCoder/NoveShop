@@ -16,6 +16,7 @@ import {
   buildPlatformStorefrontPath,
   isPlatformStorefrontId,
   buildStorefrontPath,
+  decodeStorefrontSlug,
 } from "@/lib/storefront";
 
 export default async function MerchantStorefrontPage({
@@ -25,7 +26,8 @@ export default async function MerchantStorefrontPage({
   params: Promise<{ merchantId: string }>;
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { merchantId } = await params;
+  const { merchantId: rawMerchantId } = await params;
+  const merchantId = decodeStorefrontSlug(rawMerchantId);
   const search = await searchParams;
   const platformStore = isPlatformStorefrontId(merchantId);
 

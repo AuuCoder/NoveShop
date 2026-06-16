@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getPublicProductBySlug } from "@/lib/shop";
-import { buildStorefrontProductPath } from "@/lib/storefront";
+import { buildStorefrontProductPath, decodeStorefrontSlug } from "@/lib/storefront";
 
 export default async function ProductDetailPage({
   params,
@@ -9,7 +9,8 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeStorefrontSlug(rawSlug);
   const search = await searchParams;
   const product = await getPublicProductBySlug(slug);
 

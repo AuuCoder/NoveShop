@@ -19,6 +19,7 @@ import {
   buildMerchantStorefrontProductPath,
   buildPlatformProductPath,
   buildPlatformStorefrontPath,
+  decodeStorefrontSlug,
   isPlatformStorefrontId,
 } from "@/lib/storefront";
 
@@ -29,7 +30,9 @@ export default async function MerchantStorefrontProductPage({
   params: Promise<{ merchantId: string; slug: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
-  const { merchantId, slug } = await params;
+  const { merchantId: rawMerchantId, slug: rawSlug } = await params;
+  const merchantId = decodeStorefrontSlug(rawMerchantId);
+  const slug = decodeStorefrontSlug(rawSlug);
   const search = await searchParams;
   if (isPlatformStorefrontId(merchantId)) {
     const [product, announcement, contact] = await Promise.all([

@@ -1,5 +1,22 @@
 export const PLATFORM_STOREFRONT_ID = "platform";
 
+/**
+ * 解码来自动态路由段的 slug。
+ *
+ * Next.js 在生产构建下会把动态路由参数(params.slug)以 percent-encoded 形式
+ * 交给 server component,例如中文 slug「中转站邀请码」到达时是
+ * "%E4%B8%AD%E8%BD%AC...". 而数据库里存的是中文原文,精确匹配会落空导致 404。
+ * 这里统一解码后再查库。对已是明文的英文 slug 解码无副作用;遇到非法的裸 %
+ * 序列时 decodeURIComponent 会抛错,用 try/catch 回退原值以保证不影响既有链接。
+ */
+export function decodeStorefrontSlug(slug: string) {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return slug;
+  }
+}
+
 export function buildMerchantStorefrontPath(merchantAccountId: string) {
   return `/s/${merchantAccountId}`;
 }
