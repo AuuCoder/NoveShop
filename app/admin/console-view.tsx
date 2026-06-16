@@ -9,6 +9,7 @@ import { ConfirmSubmitButton } from "@/app/components/confirm-submit-button";
 import { FormDialog } from "@/app/components/form-dialog";
 import { AutoSubmitSelect } from "@/app/components/auto-submit-select";
 import { CardImportFields } from "@/app/components/card-import-fields";
+import { InventorySkuPicker, type InventorySkuMerchantGroup } from "@/app/components/inventory-sku-picker";
 import { buildEditorInitialValue, getContentBlocksPlainText } from "@/lib/content-blocks";
 import { parseStoredImageList } from "@/lib/uploads";
 import { SkuPricingTierEditor } from "@/app/sku-pricing-tier-editor";
@@ -1659,6 +1660,29 @@ function InventorySection({
       ]),
     ).values(),
   );
+  const inventorySkuGroups = inventoryRows.reduce<InventorySkuMerchantGroup[]>((groups, row) => {
+    let group = groups.find((item) => item.merchantId === row.merchantId);
+
+    if (!group) {
+      group = {
+        merchantId: row.merchantId,
+        merchantName: row.merchantName,
+        merchantEmail: row.merchantEmail,
+        skus: [],
+      };
+      groups.push(group);
+    }
+
+    group.skus.push({
+      id: row.skuId,
+      productName: row.productName,
+      skuName: row.skuName,
+      available: row.available,
+      enabled: row.enabled,
+    });
+
+    return groups;
+  }, []);
   const filteredInventoryRows = inventoryRows.filter((row) => {
     if (inventoryProduct !== "all" && row.productId !== inventoryProduct) {
       return false;
@@ -1746,23 +1770,7 @@ function InventorySection({
                   <form action={importCardsAction} className="inline-form">
                     <AdminTabInput tab="inventory" returnTo={inventoryReturnTo} />
 
-                    <div className="field">
-                      <label htmlFor="skuId">选择 SKU</label>
-                      <select id="skuId" name="skuId" required defaultValue="">
-                        <option value="" disabled>
-                          先选择一个 SKU
-                        </option>
-                        {availableProducts.map((product) => (
-                          <optgroup key={product.id} label={product.name}>
-                            {product.skus.map((sku) => (
-                              <option key={sku.id} value={sku.id}>
-                                {sku.name} · 可售 {sku.stock.available} · {sku.enabled ? "启用中" : "已停用"}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
+                    <InventorySkuPicker groups={inventorySkuGroups} />
 
                     <div className="field">
                       <label htmlFor="batchName">批次名</label>
