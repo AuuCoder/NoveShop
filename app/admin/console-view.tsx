@@ -34,6 +34,7 @@ import {
   togglePaymentProfileEnabledAction,
   togglePlatformStorefrontAnnouncementEnabledAction,
   toggleProductStatusAction,
+  archiveProductAction,
   toggleSkuEnabledAction,
   updateCardItemAction,
   updateMerchantAccountAction,
@@ -1560,6 +1561,19 @@ function ProductsSection({
                           <Link href={getAdminProductStorefrontPath(product)} className="button-link">
                             打开前台页
                           </Link>
+                          {product.status !== ProductStatus.ARCHIVED ? (
+                            <form action={archiveProductAction} className="admin-quick-toggle-form">
+                              <AdminTabInput tab="products" returnTo={returnTo} />
+                              <input type="hidden" name="productId" value={product.id} />
+                              <ConfirmSubmitButton
+                                confirmMessage={`确定归档商品「${product.name}」吗？归档后前台不再展示，但历史订单和数据都会保留，之后仍可恢复上架。`}
+                                formNoValidate
+                                className="button-link"
+                              >
+                                归档商品
+                              </ConfirmSubmitButton>
+                            </form>
+                          ) : null}
                           <form action={deleteProductAction} className="admin-quick-toggle-form">
                             <AdminTabInput tab="products" returnTo={returnTo} />
                             <input type="hidden" name="productId" value={product.id} />

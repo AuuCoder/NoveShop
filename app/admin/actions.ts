@@ -47,6 +47,7 @@ import {
   runOrderSyncTask,
   toggleProductSkuEnabled,
   toggleProductStatus,
+  archiveProduct,
   updateCardItem,
   updateProduct,
   updateProductSku,
@@ -323,6 +324,25 @@ export async function toggleProductStatusAction(formData: FormData) {
       "success",
       product.status === ProductStatus.ACTIVE ? "商品已一键上架。" : "商品已一键下架。",
     );
+  } catch (error) {
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+export async function archiveProductAction(formData: FormData) {
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+  let destination = returnTo;
+
+  try {
+    const product = await archiveProduct({
+      productId: String(formData.get("productId") ?? ""),
+    });
+
+    revalidateAdminSurface(product.slug);
+    destination = appendMessageToPath(returnTo, "success", "商品已归档，前台将不再展示，历史订单不受影响。");
   } catch (error) {
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }

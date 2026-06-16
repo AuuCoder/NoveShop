@@ -4349,6 +4349,61 @@ export async function toggleProductStatus(input: {
   };
 }
 
+export async function archiveProduct(input: {
+  productId: string;
+}) {
+  const product = await prisma.product.findUnique({
+    where: {
+      id: input.productId,
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      summary: true,
+      description: true,
+      detailImages: true,
+      contentBlocks: true,
+      coverImage: true,
+      categoryId: true,
+      saleMode: true,
+      paymentProfileId: true,
+      status: true,
+    },
+  });
+
+  if (!product) {
+    throw new Error("商品不存在。");
+  }
+
+  if (product.status === ProductStatus.ARCHIVED) {
+    return {
+      slug: product.slug,
+      status: ProductStatus.ARCHIVED,
+    };
+  }
+
+  await updateProduct({
+    productId: product.id,
+    name: product.name,
+    slugValue: product.slug,
+    summary: product.summary ?? "",
+    description: product.description ?? "",
+    detailImages: product.detailImages ?? undefined,
+    contentBlocks: product.contentBlocks ?? undefined,
+    coverImage: product.coverImage ?? undefined,
+    categoryId: product.categoryId ?? undefined,
+    saleMode: product.saleMode,
+    paymentProfileId: product.paymentProfileId ?? undefined,
+    status: ProductStatus.ARCHIVED,
+  });
+
+  return {
+    slug: product.slug,
+    status: ProductStatus.ARCHIVED,
+  };
+}
+
 export async function createProductSku(input: {
   productId: string;
   name: string;
