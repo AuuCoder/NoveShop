@@ -239,14 +239,9 @@ export async function registerMerchantAction(formData: FormData) {
       password: String(formData.get("password") ?? ""),
     });
 
-    await createMerchantSession({
-      merchantId: merchant.id,
-      email: merchant.email,
-    });
-
-    redirectMerchant("payments", {
-      success: "商户账号已创建，现在可以配置 NovaPay 参数。",
-    });
+    redirect(`/merchant/login?success=${encodeURIComponent(
+      "注册申请已提交，请等待管理员启用账号后再登录。",
+    )}`);
   } catch (error) {
     redirect(`/merchant/register?error=${encodeURIComponent(getMessage(error))}`);
   }

@@ -506,7 +506,7 @@ export async function registerMerchantAccount(input: {
 }) {
   return createMerchantAccount({
     ...input,
-    isActive: true,
+    isActive: false,
   });
 }
 

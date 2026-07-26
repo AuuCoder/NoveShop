@@ -30,6 +30,7 @@ import {
   renameCategoryAction,
   resetMerchantAccountPasswordAction,
   rollbackPaymentProfileRevisionAction,
+  syncPaymentProfileFromNovaPayAction,
   toggleMerchantAccountEnabledAction,
   togglePaymentProfileEnabledAction,
   togglePlatformStorefrontAnnouncementEnabledAction,
@@ -2753,6 +2754,13 @@ function MerchantsSection({
                             activeLabel="停用商户"
                             inactiveLabel="启用商户"
                           />
+                          <form action={syncPaymentProfileFromNovaPayAction} className="inline-form">
+                            <AdminTabInput tab="merchants" returnTo={returnTo} />
+                            <input type="hidden" name="paymentProfileId" value={profile.id} />
+                            <button type="submit" className="button-secondary">
+                              同步 NovaPay
+                            </button>
+                          </form>
                         </div>
                       </div>
 

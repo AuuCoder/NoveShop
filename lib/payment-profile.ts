@@ -12,7 +12,11 @@ import {
   normalizeEnabledChannelCodes,
   serializeEnabledChannelCodes,
 } from "@/lib/payment-channels";
-import { listNovaPayInstalledChannelCodesCached } from "@/lib/novapay";
+import {
+  listNovaPayInstalledChannelCodes,
+  listNovaPayInstalledChannelCodesCached,
+  provisionNovaPayRegistryBridge,
+} from "@/lib/novapay";
 import { prisma } from "@/lib/prisma";
 import { getEnv } from "@/lib/env";
 
@@ -175,6 +179,75 @@ function getPaymentProfileRevisionDelegate(
   }
 
   return null;
+}
+
+
+const NOVAPAY_PLATFORM_OFFICIAL_MERCHANT_CODE = "merchant-platform-official";
+
+function chooseSyncedDefaultChannel(input: {
+  currentDefault: string;
+  bridgeDefault?: string | null;
+  remoteChannelCodes: string[];
+}) {
+  const remote = normalizeEnabledChannelCodes(input.remoteChannelCodes);
+
+  if (remote.includes(input.currentDefault)) {
+    return input.currentDefault;
+  }
+
+  if (input.bridgeDefault && remote.includes(input.bridgeDefault)) {
+    return input.bridgeDefault;
+  }
+
+  return remote[0] ?? input.bridgeDefault ?? input.currentDefault;
+}
+
+async function fetchNovaPayChannelsForProfile(profile: PaymentProfileSnapshot) {
+  const config = {
+    merchantCode: profile.merchantCode,
+    apiKey: profile.apiKey,
+    apiSecret: profile.apiSecret,
+    defaultChannelCode: profile.defaultChannelCode,
+  };
+
+  try {
+    return {
+      refreshedBridge: false,
+      apiKey: profile.apiKey,
+      apiSecret: profile.apiSecret,
+      notifySecret: profile.notifySecret ?? "",
+      bridgeDefaultChannelCode: null as string | null,
+      channelCodes: await listNovaPayInstalledChannelCodes(config),
+    };
+  } catch (error) {
+    if (profile.merchantCode !== NOVAPAY_PLATFORM_OFFICIAL_MERCHANT_CODE) {
+      throw error;
+    }
+  }
+
+  const bridge = await provisionNovaPayRegistryBridge();
+
+  if (bridge.merchantCode !== profile.merchantCode) {
+    throw new Error(
+      `NovaPay bridge merchant mismatch: expected ${profile.merchantCode}, got ${bridge.merchantCode}.`,
+    );
+  }
+
+  const refreshedConfig = {
+    merchantCode: bridge.merchantCode,
+    apiKey: bridge.apiKeyId,
+    apiSecret: bridge.apiKeySecret,
+    defaultChannelCode: bridge.channelCode,
+  };
+
+  return {
+    refreshedBridge: true,
+    apiKey: bridge.apiKeyId,
+    apiSecret: bridge.apiKeySecret,
+    notifySecret: bridge.notifySecret,
+    bridgeDefaultChannelCode: bridge.channelCode,
+    channelCodes: await listNovaPayInstalledChannelCodes(refreshedConfig),
+  };
 }
 
 function isPrismaStorageMissingError(error: unknown) {
@@ -864,6 +937,54 @@ export async function savePaymentProfile(input: {
     }
 
     return hydratePaymentProfile(finalProfile);
+  });
+}
+
+
+export async function syncPaymentProfileFromNovaPay(input: {
+  paymentProfileId: string;
+  revision?: PaymentProfileRevisionMeta;
+}) {
+  const profile = await getPaymentProfileById(input.paymentProfileId);
+
+  if (!profile) {
+    throw new Error("支付商户不存在。");
+  }
+
+  const remote = await fetchNovaPayChannelsForProfile(profile);
+  const remoteChannelCodes = normalizeEnabledChannelCodes(remote.channelCodes);
+
+  if (remoteChannelCodes.length === 0) {
+    throw new Error("NovaPay 当前没有返回可用支付通道，请先在 pay.muyuai.top 安装并启用商户通道。");
+  }
+
+  const defaultChannelCode = chooseSyncedDefaultChannel({
+    currentDefault: profile.defaultChannelCode,
+    bridgeDefault: remote.bridgeDefaultChannelCode,
+    remoteChannelCodes,
+  });
+
+  return savePaymentProfile({
+    paymentProfileId: profile.id,
+    name: profile.name,
+    merchantCode: profile.merchantCode,
+    apiKey: remote.apiKey,
+    apiSecret: remote.apiSecret,
+    notifySecret: remote.notifySecret,
+    defaultChannelCode,
+    enabledChannelCodes: remoteChannelCodes,
+    isActive: profile.isActive,
+    isDefault: profile.isDefault,
+    revision: input.revision ?? {
+      sourceScope: "ADMIN",
+      actorType: "SYSTEM",
+      actorId: null,
+      actorLabel: "NovaPay Sync",
+      changeType: "UPDATE",
+      summary: remote.refreshedBridge
+        ? "同步 NovaPay 通道并刷新官方桥接凭证"
+        : "同步 NovaPay 已启用通道",
+    },
   });
 }
 

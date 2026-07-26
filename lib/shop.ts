@@ -15,6 +15,7 @@ import {
   queryNovaPayOrder,
 } from "@/lib/novapay";
 import { isUsdtPaymentChannelCode, normalizeChannelCode } from "@/lib/payment-channels";
+import { assertNovaPayOrderIntegrity } from "@/lib/payment-integrity";
 import { controlAuditLogSelect, type ControlAuditLogSnapshot } from "@/lib/control-audit";
 import {
   getPaymentProfileForOrderNo,
@@ -2636,6 +2637,8 @@ async function applyRemoteOrderResult(
     return null;
   }
 
+  assertNovaPayOrderIntegrity(order, remoteOrder);
+
   const remoteStatus = normalizeOptionalString(remoteOrder.status);
   const providerStatus = normalizeOptionalString(remoteOrder.providerStatus);
   const gatewayOrderId = normalizeOptionalString(remoteOrder.gatewayOrderId);
@@ -3105,21 +3108,40 @@ export async function lookupOrder(orderNo: string, customerEmail: string) {
   return hydrateOrderWithCardSecrets(order);
 }
 
-/**
- * 按邮箱列出该客户的订单（最近优先）。供前台订单查询页使用：客户只用邮箱即可查到自己名下全部订单。
- */
-export async function listOrdersByEmail(customerEmail: string, limit = 50) {
+/** Lists only orders for which this browser already holds a signed capability. */
+export async function listOrdersByEmail(
+  customerEmail: string,
+  authorizedPublicTokens: string[],
+  limit = 50,
+) {
   const email = normalizeEmail(customerEmail);
+  const publicTokens = Array.from(
+    new Set(authorizedPublicTokens.map((token) => token.trim()).filter(Boolean)),
+  ).slice(0, 50);
+
+  if (publicTokens.length === 0) {
+    return [];
+  }
+
   const orders = await prisma.shopOrder.findMany({
     where: {
       customerEmail: email,
+      publicToken: { in: publicTokens },
     },
-    include: orderInclude,
+    select: {
+      id: true,
+      publicToken: true,
+      status: true,
+      amountCents: true,
+      createdAt: true,
+      product: { select: { name: true } },
+      sku: { select: { name: true } },
+    },
     orderBy: [{ createdAt: "desc" }],
     take: limit,
   });
 
-  return orders.map((order) => hydrateOrderWithCardSecrets(order));
+  return orders;
 }
 
 async function refreshOrderByPublicTokenWithAccess(

@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createShopOrder, refreshOrderByLookup, refreshOrderByPublicToken } from "@/lib/shop";
+import { createShopOrder, lookupOrder, refreshOrderByPublicToken } from "@/lib/shop";
 import { assertRateLimit } from "@/lib/rate-limit";
 import { buildStorefrontProductPath } from "@/lib/storefront";
+import {
+  getAuthorizedOrderPublicTokens,
+  grantOrderQueryAccess,
+} from "@/lib/order-query-session";
 
 function getMessage(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
@@ -74,6 +78,8 @@ export async function createShopOrderAction(formData: FormData) {
       throw new Error("订单已创建，但暂时无法读取详情，请稍后去查单页查看。");
     }
 
+    await grantOrderQueryAccess(order.publicToken);
+
     revalidatePath("/");
     revalidatePath(revalidateTarget);
 
@@ -128,7 +134,12 @@ export async function refreshLookupOrderAction(formData: FormData) {
       message: "查单刷新过于频繁，请稍后再试。",
     });
 
-    await refreshOrderByLookup(orderNo, email);
+    const authorizedTokens = await getAuthorizedOrderPublicTokens();
+    const order = await lookupOrder(orderNo, email);
+    if (!order || !authorizedTokens.includes(order.publicToken)) {
+      throw new Error("当前浏览器没有该订单的查询授权。");
+    }
+    await refreshOrderByPublicToken(order.publicToken);
     revalidatePath("/");
     revalidatePath("/query");
     revalidatePath("/admin");

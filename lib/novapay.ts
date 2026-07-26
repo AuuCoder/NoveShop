@@ -216,6 +216,55 @@ export async function listNovaPayInstalledChannelCodesCached(
   return codes;
 }
 
+
+export interface NovaPayRegistryBridgeProvision {
+  merchantCode: string;
+  apiKeyId: string;
+  apiKeySecret: string;
+  notifySecret: string;
+  channelCode: string;
+}
+
+export async function provisionNovaPayRegistryBridge(): Promise<NovaPayRegistryBridgeProvision> {
+  const env = getEnv();
+  const response = await fetch(new URL("/api/internal/bootstrap/registry-bridge", env.novaPayBaseUrl), {
+    method: "POST",
+    cache: "no-store",
+  });
+
+  const text = await response.text();
+  const data = text ? (JSON.parse(text) as Record<string, unknown>) : {};
+
+  if (!response.ok || data.success !== true || !data.bridge || typeof data.bridge !== "object") {
+    throw new Error(
+      typeof data.error === "string"
+        ? data.error
+        : `NovaPay bridge provisioning failed with status ${response.status}.`,
+    );
+  }
+
+  const bridge = data.bridge as Record<string, unknown>;
+  const merchantCode = typeof bridge.merchantCode === "string" ? bridge.merchantCode.trim() : "";
+  const apiKeyId = typeof bridge.apiKeyId === "string" ? bridge.apiKeyId.trim() : "";
+  const apiKeySecret = typeof bridge.apiKeySecret === "string" ? bridge.apiKeySecret.trim() : "";
+  const notifySecret = typeof bridge.notifySecret === "string" ? bridge.notifySecret.trim() : "";
+  const channelCode = normalizeChannelCode(
+    typeof bridge.channelCode === "string" ? bridge.channelCode.trim() : "",
+  );
+
+  if (!merchantCode || !apiKeyId || !apiKeySecret || !channelCode) {
+    throw new Error("NovaPay bridge provisioning returned incomplete credentials.");
+  }
+
+  return {
+    merchantCode,
+    apiKeyId,
+    apiKeySecret,
+    notifySecret,
+    channelCode,
+  };
+}
+
 export async function queryNovaPayOrder(orderReference: string, config?: Partial<NovaPayMerchantConfig>) {
   const resolved = requireNovaPayConfig(config);
   return requestNovaPay<NovaPayResponse>(`/api/payment-orders/${encodeURIComponent(orderReference)}`, {

@@ -13,6 +13,7 @@ import {
   listOrdersByEmail,
 } from "@/lib/shop";
 import { formatDateTime } from "@/lib/utils";
+import { getAuthorizedOrderPublicTokens } from "@/lib/order-query-session";
 
 const toneToBadgeVariant: Record<
   ReturnType<typeof getOrderStatusTone>,
@@ -36,12 +37,12 @@ export default async function QueryPage({
   if (email) {
     try {
       await assertRateLimit({
-        key: "public:query-page",
+        key: `public:query-page:${email.toLowerCase()}`,
         limit: 15,
         windowMs: 60_000,
         message: "查单请求过于频繁，请稍后再试。",
       });
-      orders = await listOrdersByEmail(email);
+      orders = await listOrdersByEmail(email, await getAuthorizedOrderPublicTokens());
     } catch (error) {
       orders = [];
       errorMessage = error instanceof Error ? error.message : "查单失败，请稍后再试。";
@@ -62,7 +63,7 @@ export default async function QueryPage({
             订单状态查询
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            输入下单时使用的邮箱，即可查看该邮箱名下的所有订单状态与交付记录。
+            输入下单邮箱，查看当前浏览器已获授权的订单状态与交付记录。
           </p>
         </div>
       </section>
@@ -101,7 +102,7 @@ export default async function QueryPage({
             ) : null}
             {noMatch ? (
               <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-                没有找到这个邮箱名下的订单，请确认邮箱是否正确。
+                当前浏览器没有这个邮箱名下的已授权订单。
               </div>
             ) : null}
           </CardContent>
@@ -148,7 +149,7 @@ export default async function QueryPage({
           <Card>
             <CardContent>
               <div className="flex items-center justify-center rounded-md border border-dashed border-border/60 bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-                输入邮箱后，这里会列出该邮箱名下的所有订单，点击即可查看支付进度与交付结果。
+                订单仅会出现在创建该订单的浏览器中；也可以使用下单完成时获得的订单链接查看详情。
               </div>
             </CardContent>
           </Card>

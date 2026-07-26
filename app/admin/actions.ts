@@ -28,6 +28,7 @@ import {
   getPaymentProfileRevisionById,
   rollbackPaymentProfileToRevision,
   savePaymentProfile,
+  syncPaymentProfileFromNovaPay,
 } from "@/lib/payment-profile";
 import {
   getPlatformStorefrontAnnouncement,
@@ -878,6 +879,98 @@ export async function updatePaymentProfileAction(formData: FormData) {
       });
     }
 
+    destination = appendMessageToPath(returnTo, "error", getMessage(error));
+  }
+
+  redirect(destination);
+}
+
+
+export async function syncPaymentProfileFromNovaPayAction(formData: FormData) {
+  const adminActor = await getAdminAuditActor();
+  const paymentProfileId = parseOptionalId(formData.get("paymentProfileId"));
+  const tab = parseAdminTab(formData.get("tab"));
+  const returnTo = normalizeAdminConsoleReturnTo(formData.get("returnTo"), buildAdminHref(tab));
+
+  if (!paymentProfileId) {
+    redirect(appendMessageToPath(returnTo, "error", "缺少支付商户 ID。"));
+  }
+
+  const existing = await getPaymentProfileById(paymentProfileId);
+  const beforeState = buildPaymentProfileAuditState(existing);
+  let destination = appendMessageToPath(returnTo, "success", "已从 NovaPay 同步支付通道。");
+
+  try {
+    const profile = await syncPaymentProfileFromNovaPay({
+      paymentProfileId,
+      revision: {
+        sourceScope: "ADMIN",
+        actorType: "ADMIN_ACCOUNT",
+        actorId: adminActor,
+        actorLabel: adminActor,
+        changeType: "UPDATE",
+        summary: "同步 NovaPay 商户配置",
+      },
+    });
+
+    const afterState = buildPaymentProfileAuditState(profile);
+    if (!afterState) {
+      throw new Error("NovaPay 同步后的支付商户状态异常。");
+    }
+
+    await captureControlAuditLog({
+      scope: "ADMIN",
+      actorType: "ADMIN_ACCOUNT",
+      actorId: adminActor,
+      actorLabel: adminActor,
+      merchantAccountId: profile.ownerId,
+      paymentProfileId: profile.id,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: resolvePaymentProfileAuditRisk({
+        before: beforeState,
+        after: afterState,
+        apiCredentialTouched: existing
+          ? profile.apiKey !== existing.apiKey || profile.apiSecret !== existing.apiSecret
+          : false,
+        notifySecretTouched: existing
+          ? (profile.notifySecret ?? "") !== (existing.notifySecret ?? "")
+          : false,
+      }),
+      outcome: "SUCCEEDED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: profile.id,
+      targetLabel: buildPaymentProfileAuditTargetLabel(profile),
+      summary: "同步 NovaPay 商户配置",
+      detail: "从 pay.muyuai.top 拉取当前商户实际已启用通道，并写回 NoveShop 本地支付配置。官方 bridge 凭证失效时会自动刷新。",
+      payload: {
+        before: beforeState,
+        after: afterState,
+      },
+    });
+
+    revalidatePaymentSurface();
+    revalidatePath("/admin/merchants/profiles");
+  } catch (error) {
+    await captureControlAuditLog({
+      scope: "ADMIN",
+      actorType: "ADMIN_ACCOUNT",
+      actorId: adminActor,
+      actorLabel: adminActor,
+      merchantAccountId: existing?.ownerId ?? null,
+      paymentProfileId,
+      actionType: "PAYMENT_PROFILE_UPDATED",
+      riskLevel: "MEDIUM",
+      outcome: "FAILED",
+      targetType: "PAYMENT_PROFILE",
+      targetId: paymentProfileId,
+      targetLabel: buildPaymentProfileAuditTargetLabel(existing ?? {}),
+      summary: "同步 NovaPay 商户配置失败",
+      detail: getMessage(error),
+      payload: {
+        before: beforeState,
+        error: getMessage(error),
+      },
+    });
     destination = appendMessageToPath(returnTo, "error", getMessage(error));
   }
 

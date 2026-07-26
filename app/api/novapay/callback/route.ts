@@ -148,22 +148,24 @@ export async function POST(request: Request) {
     (env.allowEnvPaymentProfileBootstrap ? env.novaPayNotifySecret : "");
   const isSupportedEvent = eventType === "payment.order.updated" && !!payload.order;
 
-  let signatureValid = true;
+  let signatureValid = false;
   let processingStatus = isSupportedEvent ? "PROCESSING" : "IGNORED";
   let processingError: string | null = null;
 
-  if (notifySecret && (!timestamp || !signature)) {
-    signatureValid = false;
+  if (!notifySecret) {
+    processingStatus = "REJECTED";
+    processingError = "Callback verification secret is not configured.";
+  } else if (!timestamp || !signature) {
     processingStatus = "REJECTED";
     processingError = "Missing callback signature headers.";
-  } else if (notifySecret && !isTimestampFresh(timestamp)) {
-    signatureValid = false;
+  } else if (!isTimestampFresh(timestamp)) {
     processingStatus = "REJECTED";
     processingError = "Callback timestamp expired.";
-  } else if (notifySecret && !verifyNovaPayCallbackSignature(rawBody, timestamp, signature, notifySecret)) {
-    signatureValid = false;
+  } else if (!verifyNovaPayCallbackSignature(rawBody, timestamp, signature, notifySecret)) {
     processingStatus = "REJECTED";
     processingError = "Invalid callback signature.";
+  } else {
+    signatureValid = true;
   }
 
   if (isSupportedEvent && !externalOrderId && !processingError) {

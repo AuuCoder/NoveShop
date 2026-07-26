@@ -19,6 +19,14 @@ const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
     label: "支付宝",
     description: "适合网页内直接拉起支付宝收银台。",
   },
+  "ctf.alipay.monitor": {
+    label: "支付宝收款监听",
+    description: "展示商户支付宝收款码，并根据 NovaPay 监听账单自动确认订单。",
+  },
+  "ctf.wxpay.monitor": {
+    label: "微信收款监听",
+    description: "展示商户微信收款码，并根据 NovaPay 监听账单自动确认订单。",
+  },
   "usdt.base": {
     label: "USDT · Polygon",
     description: "通过 Polygon 链完成 USDT 转账支付。",
@@ -51,6 +59,8 @@ const CHANNEL_LABELS: Record<string, { label: string; description: string }> = {
 
 export const PAYMENT_CHANNEL_PRESET_CODES = [
   "alipay.page",
+  "ctf.alipay.monitor",
+  "ctf.wxpay.monitor",
   "usdt.bsc",
   "usdt.base",
   "usdt.sol",

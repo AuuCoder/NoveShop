@@ -54,7 +54,7 @@ services:
       - ../.env
     command: npm run start
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     volumes:
       - noveshop-uploads:/app/uploads
       - noveshop-delivery:/app/delivery-files
